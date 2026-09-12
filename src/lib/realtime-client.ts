@@ -171,8 +171,10 @@ export async function startRealtimeSession(
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
+    // The beta endpoint (/v1/realtime) now answers "The Realtime Beta API is
+    // no longer supported. Please use /v1/realtime/calls for the GA API."
     const sdpRes = await fetch(
-      "https://api.openai.com/v1/realtime?model=gpt-realtime",
+      "https://api.openai.com/v1/realtime/calls?model=gpt-realtime",
       {
         method: "POST",
         body: offer.sdp,
@@ -184,7 +186,12 @@ export async function startRealtimeSession(
     );
 
     if (!sdpRes.ok) {
-      throw new Error(`SDP handshake failed: ${sdpRes.status}`);
+      // Carry the body through — a bare status turns every cause into the
+      // same unactionable "handshake failed: 400".
+      const detail = await sdpRes.text().catch(() => "");
+      throw new Error(
+        `SDP handshake failed: ${sdpRes.status} ${detail.slice(0, 200)}`
+      );
     }
 
     const answerSdp = await sdpRes.text();
