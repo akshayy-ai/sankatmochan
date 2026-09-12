@@ -26,11 +26,105 @@ export type LiveCase = {
   /** Vobiz call identifier, when the case came in over the phone */
   callUuid?: string;
   callerNumber?: string;
+  /** Full exchange history. Present once a case has more than one turn. */
+  turns?: CaseTurn[];
+  /** Facts gathered so far, keyed by the slot that asked for them. */
+  slots?: Record<string, string>;
+  /** Flags an operator should see: silence, a dropped line, failed analysis. */
+  attention?: string[];
+};
+
+/** One exchange within a case — a caller utterance, an agent line, or a system note. */
+export type CaseTurn = {
+  seq: number;
+  at: string;
+  kind: "CALLER" | "AGENT" | "SYSTEM" | "TEXT" | "VOICE" | "PHOTO" | "LOCATION" | "DTMF";
+  text: string;
+  english?: string;
+  /** ASR confidence where the channel reports one. Low values are kept, never discarded. */
+  confidence?: number;
 };
 
 const MAX_CASES = 50;
+const MAX_TURNS = 60;
 
 const cases: LiveCase[] = [];
+
+/**
+ * Append a turn to a case.
+ *
+ * Every exchange is recorded, including silence. A caller who went quiet
+ * mid-report must be distinguishable from one who hung up — to an operator
+ * those look identical unless the silence itself is written down.
+ */
+export function appendTurn(
+  caseId: string,
+  turn: Omit<CaseTurn, "seq" | "at"> & { at?: string }
+): CaseTurn | null {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return null;
+  if (!c.turns) c.turns = [];
+
+  const entry: CaseTurn = {
+    seq: c.turns.length + 1,
+    at: turn.at || new Date().toISOString(),
+    kind: turn.kind,
+    text: turn.text,
+    english: turn.english,
+    confidence: turn.confidence,
+  };
+  c.turns.push(entry);
+  // Keep the opening turns — they carry the original report — and drop from
+  // the middle, which is where repetition and silence notes accumulate.
+  if (c.turns.length > MAX_TURNS) c.turns.splice(4, c.turns.length - MAX_TURNS);
+  return entry;
+}
+
+const SEVERITY_RANK: Record<string, number> = {
+  LOW: 1, NONE: 0, MEDIUM: 2, HIGH: 3, CRITICAL: 4,
+};
+
+/**
+ * Severity is a high-water mark. Later turns may raise it, never lower it —
+ * a caller who calms down, or an ASR pass that garbles the worst detail, must
+ * not talk the system out of an emergency it already recognised.
+ */
+export function raiseSeverity(caseId: string, severity: string): boolean {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return false;
+  if ((SEVERITY_RANK[severity] ?? 0) > (SEVERITY_RANK[c.severity] ?? 0)) {
+    c.severity = severity;
+    return true;
+  }
+  return false;
+}
+
+/** Merge newly learned facts into a case without discarding what is already known. */
+export function reviseCase(caseId: string, patch: Partial<LiveCase>): boolean {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return false;
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === undefined || v === null || v === "") continue;
+
+    if (k === "severity") { raiseSeverity(caseId, String(v)); continue; }
+
+    // Category is sticky once it is specific. A caller answers "where?" with
+    // just an address, and triaging that lone turn returns GENERAL — which
+    // would erase the FIRE established by the turn that actually reported the
+    // emergency. Only GENERAL may be replaced.
+    if (k === "category") {
+      if (c.category && c.category !== "GENERAL" && v === "GENERAL") continue;
+      c.category = String(v);
+      continue;
+    }
+
+    // Never overwrite a real pin with a place name the model guessed.
+    if (k === "location" && /-?\d+\.\d+\s*,\s*-?\d+\.\d+/.test(c.location)) continue;
+
+    (c as Record<string, unknown>)[k] = v;
+  }
+  return true;
+}
 
 export function addCase(c: LiveCase) {
   cases.unshift(c);
