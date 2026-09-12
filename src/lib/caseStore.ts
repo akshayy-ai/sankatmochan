@@ -46,8 +46,32 @@ export function findByCallUuid(callUuid: string): LiveCase | undefined {
   return cases.find((c) => c.callUuid === callUuid);
 }
 
+const issuedIds = new Set<string>();
+let idCounter = 0;
+
+/**
+ * Case ids must stay unique for as long as a case can be referenced.
+ *
+ * The previous form took the last six digits of Date.now(), which wraps every
+ * 16 minutes 40 seconds. Two cases could share an id, and since the id is the
+ * lookup key in page.tsx and CaseDetail.tsx, a collision shows one caller's
+ * incident under another's reference.
+ */
 export function nextCaseId(prefix: string): string {
-  return `${prefix}-${String(Date.now()).slice(-6)}`;
+  for (;;) {
+    const id = `${prefix}-${Date.now().toString(36)}${(++idCounter % 1296)
+      .toString(36)
+      .padStart(2, "0")}`.toUpperCase();
+    if (!issuedIds.has(id)) {
+      issuedIds.add(id);
+      return id;
+    }
+  }
+}
+
+/** Resolve a case by id without scanning, and without matching a stale one. */
+export function getCase(id: string): LiveCase | undefined {
+  return cases.find((c) => c.id === id);
 }
 
 /**
