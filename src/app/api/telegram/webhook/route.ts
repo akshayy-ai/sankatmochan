@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  addCase,
+  listCases,
+  nextCaseId,
+  analyzeEmergency,
+  type LiveCase,
+} from "@/lib/caseStore";
 
 /**
  * Telegram Bot Webhook — receives text, voice, AND image emergency messages
@@ -15,28 +22,12 @@ import { NextRequest, NextResponse } from "next/server";
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 
-// In-memory case store (shared with the dashboard via GET endpoint)
-const telegramCases: TelegramCase[] = [];
-
-export type TelegramCase = {
-  id: string;
-  chatId: number;
-  senderName: string;
-  message: string;
-  language: string;
-  englishTranslation: string;
-  severity: string;
-  category: string;
-  timestamp: string;
-  location: string;
-  channel: "TEXT" | "VOICE" | "PHOTO";
-  audioTranscript?: string;
-  imageAnalysis?: string;
-};
+type TelegramCase = LiveCase;
 
 // GET — dashboard can poll for new Telegram cases
 export async function GET() {
-  return NextResponse.json({ cases: telegramCases, count: telegramCases.length });
+  const cases = listCases();
+  return NextResponse.json({ cases, count: cases.length });
 }
 
 // POST — Telegram sends updates here
@@ -108,7 +99,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      const caseId = `TG-${String(Date.now()).slice(-6)}`;
+      const caseId = nextCaseId("TG");
 
       const newCase: TelegramCase = {
         id: caseId,
@@ -124,8 +115,7 @@ export async function POST(req: NextRequest) {
         channel: "PHOTO",
         imageAnalysis: imageAnalysis.description,
       };
-      telegramCases.unshift(newCase);
-      if (telegramCases.length > 50) telegramCases.length = 50;
+      addCase(newCase);
 
       const sevEmoji =
         imageAnalysis.severity === "CRITICAL" ? "🔴" :
@@ -163,7 +153,7 @@ export async function POST(req: NextRequest) {
       }
 
       const analysis = await analyzeEmergency(transcript);
-      const caseId = `TG-${String(Date.now()).slice(-6)}`;
+      const caseId = nextCaseId("TG");
 
       const newCase: TelegramCase = {
         id: caseId,
@@ -179,8 +169,7 @@ export async function POST(req: NextRequest) {
         channel: "VOICE",
         audioTranscript: transcript,
       };
-      telegramCases.unshift(newCase);
-      if (telegramCases.length > 50) telegramCases.length = 50;
+      addCase(newCase);
 
       const sevEmoji =
         analysis.severity === "CRITICAL" ? "🔴" :
@@ -223,7 +212,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Emergency — create case ──
-    const caseId = `TG-${String(Date.now()).slice(-6)}`;
+    const caseId = nextCaseId("TG");
 
     const newCase: TelegramCase = {
       id: caseId,
@@ -238,8 +227,7 @@ export async function POST(req: NextRequest) {
       location: analysis.location || "Location not shared",
       channel: "TEXT",
     };
-    telegramCases.unshift(newCase);
-    if (telegramCases.length > 50) telegramCases.length = 50;
+    addCase(newCase);
 
     const sevEmoji =
       analysis.severity === "CRITICAL" ? "🔴" :
@@ -420,88 +408,4 @@ async function sendTelegram(chatId: number, text: string) {
       parse_mode: "Markdown",
     }),
   });
-}
-
-/** Use OpenAI to detect language, translate, classify — distinguishes emergency vs normal chat */
-async function analyzeEmergency(text: string): Promise<{
-  language: string;
-  translation: string;
-  severity: string;
-  category: string;
-  location: string;
-  response: string;
-  is_emergency: boolean;
-}> {
-  if (!OPENAI_KEY) {
-    return {
-      language: "Unknown",
-      translation: text,
-      severity: "MEDIUM",
-      category: "GENERAL",
-      location: "",
-      response: "Emergency registered. Please share more details.",
-      is_emergency: true,
-    };
-  }
-
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: `You are an emergency triage AI for India's 112 helpline. Analyze the incoming message and respond with JSON:
-{
-  "is_emergency": true or false — is this an actual emergency or distress report? Greetings, thank you, general questions, status inquiries, casual chat = false. Actual emergencies, accidents, fires, floods, medical distress, violence, missing persons = true,
-  "language": "detected language name (Hindi, Marathi, Telugu, Tamil, Bengali, Gujarati, Kannada, Malayalam, Odia, Punjabi, English, etc.)",
-  "translation": "English translation of the message",
-  "severity": "CRITICAL | HIGH | MEDIUM | LOW | NONE",
-  "category": "FLOOD | MEDICAL | FIRE | SAFETY | MISSING | ACCIDENT | DV | GENERAL | CHAT",
-  "location": "any location mentioned in the message, or empty string",
-  "response": "If is_emergency=true: a brief acknowledgment in the SAME LANGUAGE as the input, reassuring the caller that help is being dispatched, with English translation in parentheses. If is_emergency=false: a friendly conversational reply in the SAME LANGUAGE, reminding them this is an emergency helpline and how to report emergencies (text, voice, or photo)."
-}
-
-Severity guide:
-- CRITICAL: life-threatening, active danger, trapped, drowning, cardiac arrest
-- HIGH: serious injury, building collapse, fire, violence
-- MEDIUM: non-life-threatening medical, minor accident, property damage
-- LOW: information request, non-urgent report
-- NONE: not an emergency at all (greetings, thanks, general questions)`,
-          },
-          { role: "user", content: text },
-        ],
-        temperature: 0.1,
-        max_tokens: 500,
-      }),
-    });
-
-    const data = await res.json();
-    const parsed = JSON.parse(data.choices?.[0]?.message?.content || "{}");
-    return {
-      language: parsed.language || "Unknown",
-      translation: parsed.translation || text,
-      severity: parsed.severity || "MEDIUM",
-      category: parsed.category || "GENERAL",
-      location: parsed.location || "",
-      response: parsed.response || "",
-      is_emergency: parsed.is_emergency !== false,
-    };
-  } catch {
-    return {
-      language: "Unknown",
-      translation: text,
-      severity: "MEDIUM",
-      category: "GENERAL",
-      location: "",
-      response: "Emergency registered.",
-      is_emergency: true,
-    };
-  }
 }

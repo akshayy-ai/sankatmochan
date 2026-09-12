@@ -25,9 +25,10 @@ type TelegramCase = {
   category: string;
   timestamp: string;
   location: string;
-  channel: "TEXT" | "VOICE" | "PHOTO";
+  channel: "TEXT" | "VOICE" | "PHOTO" | "CALL";
   audioTranscript?: string;
   imageAnalysis?: string;
+  callerNumber?: string;
 };
 
 const LANG_CODE: Record<string, string> = {
@@ -58,6 +59,7 @@ const CHANNEL_LABEL: Record<TelegramCase["channel"], string> = {
   TEXT: "TELEGRAM",
   VOICE: "TG VOICE",
   PHOTO: "TG PHOTO",
+  CALL: "112 CALL",
 };
 
 let liveCases: CrisisCase[] = [];
@@ -72,13 +74,30 @@ function buildTimeline(t: TelegramCase, hhmm: string): TimelineEvent[] {
   const events: TimelineEvent[] = [
     {
       time: hhmm,
-      action: `Inbound ${t.channel.toLowerCase()} message via Telegram`,
+      action:
+        t.channel === "CALL"
+          ? "Inbound 112 voice call answered"
+          : `Inbound ${t.channel.toLowerCase()} message via Telegram`,
       badge: "ingest",
       duration: "0.1s",
-      detail: `From ${t.senderName} · chat ${t.chatId}`,
+      detail:
+        t.channel === "CALL"
+          ? `Vobiz telephony · caller ${t.callerNumber ?? t.senderName}`
+          : `From ${t.senderName} · chat ${t.chatId}`,
       status: "done",
     },
   ];
+
+  if (t.channel === "CALL") {
+    events.push({
+      time: hhmm,
+      action: "Caller speech transcribed on the line",
+      badge: "asr",
+      duration: "1.2s",
+      detail: `Vobiz ASR (${LANG_CODE[t.language] ?? "hi-IN"}) · ${t.audioTranscript ?? t.message}`,
+      status: "done",
+    });
+  }
 
   if (t.channel === "VOICE") {
     events.push({
@@ -173,7 +192,11 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
     owner: null,
     fixNote: "",
     timeline: buildTimeline(t, hhmm),
-    tags: [t.category, t.language, `TG:${t.channel}`],
+    tags: [
+      t.category,
+      t.language,
+      t.channel === "CALL" ? "VOBIZ:CALL" : `TG:${t.channel}`,
+    ],
     slaMinutes: SLA_BY_SEVERITY[severity] ?? 30,
     isLive: true,
   };
