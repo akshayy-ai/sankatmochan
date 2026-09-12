@@ -24,7 +24,12 @@ services:
     # *.trycloudflare.com webhook targets ("Failed to resolve host"), so the
     # deployment needs a real hostname on a domain you control.
     # Route it in the Cloudflare dashboard: Public Hostname → http://app:3000
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    #
+    # The token comes from TUNNEL_TOKEN in the container environment, which
+    # cloudflared reads natively. Passing it as `--token ${VAR}` would not
+    # work: Compose interpolates command strings from .env at parse time,
+    # not from env_file, so the flag would expand to an empty value.
+    command: tunnel --no-autoupdate run
     env_file:
       - .env.tunnel
     depends_on:
