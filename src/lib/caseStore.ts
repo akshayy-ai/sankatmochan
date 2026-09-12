@@ -40,6 +40,8 @@ export type LiveCase = {
    * report, must not be able to erase a live incident from the queue.
    */
   callerSaysResolved?: boolean;
+  /** Closed by an operator. Only an operator may set this. */
+  resolvedByOperator?: boolean;
 };
 
 /** One exchange within a case — a caller utterance, an agent line, or a system note. */
@@ -154,8 +156,28 @@ export const INCIDENT_TTL_MS = 30 * 60 * 1000;
 export function openIncidentFor(chatId: number): LiveCase | undefined {
   const now = Date.now();
   return cases.find(
-    (c) => c.chatId === chatId && now - (c.lastTurnAt ?? 0) < INCIDENT_TTL_MS
+    (c) =>
+      c.chatId === chatId &&
+      !c.resolvedByOperator &&
+      now - (c.lastTurnAt ?? 0) < INCIDENT_TTL_MS
   );
+}
+
+/**
+ * Operator closes an incident.
+ *
+ * The case stays in the queue and stays readable; what ends is its claim on
+ * being the default destination for that chat's next message. Only an
+ * operator may do this — a caller saying "it's fine", or an abuser who grabs
+ * the phone during a DV report, must not be able to retire a live incident.
+ */
+export function resolveCase(caseId: string): boolean {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return false;
+  c.resolvedByOperator = true;
+  // Age it past the continuation window so the next message opens fresh.
+  c.lastTurnAt = 0;
+  return true;
 }
 
 export function touchCase(caseId: string) {
