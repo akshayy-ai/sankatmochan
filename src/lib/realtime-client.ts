@@ -63,10 +63,67 @@ export type RealtimeSession = {
   mute: (muted: boolean) => void;
 };
 
+/** Mutable per-session context, threaded into the event handler. */
+type SessionCtx = { sessionId: string; caseId: string | null };
+
+const CATEGORY_MAP: Record<string, string> = {
+  fire: "FIRE", flood: "FLOOD", medical: "MEDICAL", accident: "ACCIDENT",
+  crime: "SAFETY", violence: "SAFETY", safety: "SAFETY", missing: "MISSING",
+  domestic: "DV",
+};
+
+function mapCategory(kind: string): string {
+  const k = (kind || "").toLowerCase();
+  return Object.entries(CATEGORY_MAP).find(([w]) => k.includes(w))?.[1] ?? "GENERAL";
+}
+
+/**
+ * File or update the case on the server.
+ *
+ * Returns the real case id. The client must never invent one: a reference the
+ * caller is told has to exist on an operator's queue.
+ */
+async function fileRealtimeCase(
+  sessionId: string,
+  patch: Record<string, unknown>,
+  caseId?: string | null,
+  turn?: { role: string; text: string },
+): Promise<{ caseId: string | null }> {
+  try {
+    const res = await fetch("/api/realtime/case", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: turn ? "turn" : caseId ? "update" : "create",
+        sessionId,
+        caseId: caseId ?? undefined,
+        patch,
+        turn,
+      }),
+    });
+    if (!res.ok) return { caseId: caseId ?? null };
+    const data = await res.json();
+    return { caseId: data.caseId ?? caseId ?? null };
+  } catch {
+    // Never throw into the audio path — a failed write must not end the call.
+    return { caseId: caseId ?? null };
+  }
+}
+
 export async function startRealtimeSession(
   callbacks: RealtimeCallbacks,
 ): Promise<RealtimeSession> {
   callbacks.onStateChange("connecting");
+
+  // Minted before the token fetch so a reconnect carries the same key: a new
+  // OpenAI conversation, but the same case.
+  const ctx: SessionCtx = {
+    sessionId:
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : String(Date.now()),
+    caseId: null,
+  };
 
   // 1. Get ephemeral token
   let clientSecret: string;
@@ -160,7 +217,7 @@ export async function startRealtimeSession(
   dc.onmessage = (event) => {
     try {
       const msg: RealtimeEvent = JSON.parse(event.data);
-      handleRealtimeEvent(msg, dc, callbacks);
+      void handleRealtimeEvent(msg, dc, callbacks, ctx);
     } catch {
       // Ignore unparseable messages
     }
@@ -253,10 +310,11 @@ export async function startRealtimeSession(
 
 // ── Event handler ────────────────────────────────────────────
 
-function handleRealtimeEvent(
+async function handleRealtimeEvent(
   event: RealtimeEvent,
   dc: RTCDataChannel,
   callbacks: RealtimeCallbacks,
+  ctx: SessionCtx,
 ) {
   switch (event.type) {
     // Agent speaking (transcript of audio output)
@@ -275,6 +333,15 @@ function handleRealtimeEvent(
         text: event.transcript ?? "",
         timestamp: Date.now(),
       });
+      // The caller's own words belong on the case, not just the model's
+      // structured summary. Empty transcriptions are recorded too — an
+      // operator must see that speech happened and was not captured.
+      if (ctx.caseId) {
+        void fileRealtimeCase(ctx.sessionId, {}, ctx.caseId, {
+          role: "caller",
+          text: event.transcript ?? "",
+        });
+      }
       break;
 
     // Tool call completed — execute and return result
@@ -293,11 +360,33 @@ function handleRealtimeEvent(
       if (name === "create_emergency_case") {
         const emergencyCase = args as unknown as EmergencyCase;
         callbacks.onCaseCreated(emergencyCase);
-        result = {
-          status: "CASE_CREATED",
-          case_id: `CASE-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-          message: `Emergency case logged: ${emergencyCase.emergency_type} at ${emergencyCase.location}. Severity: ${emergencyCase.severity}.`,
-        };
+
+        // The case id comes from the server, which actually files it. This
+        // used to be `CASE-${Math.random()}` — a number the caller was told
+        // and which existed nowhere, on a case no operator ever saw.
+        const filed = await fileRealtimeCase(ctx.sessionId, {
+          message: emergencyCase.description_native || emergencyCase.description_english,
+          category: mapCategory(emergencyCase.emergency_type),
+          severity: emergencyCase.severity,
+          location: emergencyCase.location,
+          language: emergencyCase.language,
+          englishTranslation: emergencyCase.description_english,
+        });
+
+        ctx.caseId = filed.caseId ?? ctx.caseId;
+
+        result = filed.caseId
+          ? {
+              status: "CASE_CREATED",
+              case_id: filed.caseId,
+              message: `Case ${filed.caseId} is on the operator queue: ${emergencyCase.emergency_type} at ${emergencyCase.location}.`,
+            }
+          : {
+              // Never invent a reference the caller cannot be given.
+              status: "CASE_NOT_FILED",
+              message:
+                "The case could not be filed. Tell the caller their report is being taken by a person and do not give a case number.",
+            };
         callbacks.onTranscript({
           role: "system",
           text: `🚨 Case created: ${emergencyCase.emergency_type} — ${emergencyCase.severity} — ${emergencyCase.location}`,
@@ -306,9 +395,17 @@ function handleRealtimeEvent(
       } else if (name === "dispatch_emergency_unit") {
         const dispatch = args as unknown as DispatchRequest;
         callbacks.onDispatchRequested(dispatch);
+        // No unit is named and no ETA is given: nothing here dispatches
+        // anything. Telling someone in a burning building that engines are
+        // eight minutes away can stop them self-rescuing or calling a
+        // neighbour who could actually reach them.
+        void fileRealtimeCase(ctx.sessionId, {}, ctx.caseId, {
+          role: "system",
+          text: `Operator asked for ${dispatch.agency} at ${dispatch.location} (${dispatch.priority})`,
+        });
         result = {
-          status: "DISPATCHED",
-          message: `${dispatch.agency} unit dispatched to ${dispatch.location}. Priority: ${dispatch.priority}. ETA: 8-12 minutes.`,
+          status: "FLAGGED_FOR_OPERATOR",
+          message: `Marked on the case for an operator to action. Do not tell the caller a unit is on the way or give any ETA.`,
         };
         callbacks.onTranscript({
           role: "system",

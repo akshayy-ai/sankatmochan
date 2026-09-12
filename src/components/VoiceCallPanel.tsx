@@ -52,6 +52,23 @@ export default function VoiceCallPanel() {
     };
   }, [state]);
 
+  // page.tsx renders this panel only while the voice tab is selected, so
+  // switching to the console unmounts it. Without this the peer connection,
+  // the microphone and the agent all keep running orphaned — the browser
+  // recording indicator stays lit, the agent keeps speaking to the caller, and
+  // the only End Call button in the app no longer exists. Returning to the tab
+  // remounts at idle, so the natural next click opens a SECOND session.
+  //
+  // Stopping on unmount is the safe half of the fix. The full fix is to lift
+  // the session above the view switch and show a persistent call bar, so an
+  // operator can watch the case escalate without dropping the caller.
+  useEffect(() => {
+    return () => {
+      sessionRef.current?.stop();
+      sessionRef.current = null;
+    };
+  }, []);
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
