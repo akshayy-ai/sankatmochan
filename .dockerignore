@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+npm-debug.log*
+README.md
+SUBMISSION.md
+DEMO_SCRIPT.md
+SOCIAL_POST.md
+.env*
+.vercel
+.DS_Store
+Dockerfile
+docker-compose.yml

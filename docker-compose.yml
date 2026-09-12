@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    image: sankatmochan:latest
+    container_name: sankatmochan
+    restart: unless-stopped
+    # Secrets stay in .env.local on the host and are read at container start.
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    # Published on loopback only — the tunnel is the sole public path in.
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - sankatnet
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: sankatmochan-tunnel
+    restart: unless-stopped
+    # A named tunnel gives a stable hostname that survives restarts, which is
+    # what a long-lived deployment needs. Set CLOUDFLARE_TUNNEL_TOKEN in
+    # .env.tunnel from the token Cloudflare shows when you create the tunnel.
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    env_file:
+      - .env.tunnel
+    depends_on:
+      - app
+    networks:
+      - sankatnet
+
+networks:
+  sankatnet:
+    driver: bridge
