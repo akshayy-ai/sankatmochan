@@ -127,6 +127,16 @@ async function processMessage(message: TelegramMessage) {
         return;
       }
 
+      if (!imageAnalysis.is_emergency) {
+        await sendTelegram(chatId,
+          `📸 _I see:_ _${imageAnalysis.description}_\n\n` +
+          "🙏 This does not look like an emergency, so no case was raised.\n\n" +
+          "If it is one, send a photo of the situation or describe it in words.\n\n" +
+          "📞 For immediate help, call *112*"
+        );
+        return;
+      }
+
       const caseId = nextCaseId("TG");
 
       const newCase: TelegramCase = {
@@ -181,6 +191,21 @@ async function processMessage(message: TelegramMessage) {
       }
 
       const analysis = await analyzeEmergency(transcript);
+
+      // Same gate the text path applies. Without it a casual voice note — or a
+      // transcript the model could make no sense of — files a junk case, which
+      // is how a NONE/GENERAL entry reached the operator queue.
+      if (!analysis.is_emergency) {
+        await sendTelegram(chatId,
+          `🎤 _Heard:_ _${transcript}_\n\n` +
+          "🙏 This is the *Sankatmochan 112 Emergency Helpline*.\n\n" +
+          "If this is an emergency, describe it — type, voice note 🎤, or photo 📸.\n" +
+          "If the transcription above is wrong, please try again or type instead.\n\n" +
+          "📞 For immediate help, call *112*"
+        );
+        return;
+      }
+
       const caseId = nextCaseId("TG");
 
       const newCase: TelegramCase = {
@@ -302,6 +327,7 @@ async function analyzeImage(
   caption?: string
 ): Promise<{
   description: string;
+  is_emergency: boolean;
   severity: string;
   category: string;
   location: string;
@@ -329,6 +355,7 @@ async function analyzeImage(
         role: "system",
         content: `You are an emergency scene analyst for India's 112 helpline. Analyze the photo and respond with JSON:
 {
+  "is_emergency": true or false — does this image actually show an emergency, hazard, injury or person in danger? A selfie, screenshot, meme, pet, food or ordinary scene is false,
   "description": "What you see in the image — describe the emergency situation clearly",
   "severity": "CRITICAL | HIGH | MEDIUM | LOW",
   "category": "FLOOD | MEDICAL | FIRE | SAFETY | MISSING | ACCIDENT | DV | GENERAL",
@@ -374,6 +401,7 @@ Be specific about what you see. If the image is not an emergency, classify as LO
     const parsed = JSON.parse(data.choices?.[0]?.message?.content || "{}");
     return {
       description: parsed.description || "Image received",
+      is_emergency: parsed.is_emergency !== false,
       severity: parsed.severity || "MEDIUM",
       category: parsed.category || "GENERAL",
       location: parsed.location || "",
@@ -402,7 +430,18 @@ async function transcribeVoice(fileId: string): Promise<string | null> {
 
     const formData = new FormData();
     formData.append("file", audioBlob, "voice.ogg");
-    formData.append("model", "whisper-1");
+    // gpt-4o-transcribe is materially better than whisper-1 on Indian
+    // languages. Measured on the same Hindi clip, whisper-1 rendered
+    // "आग" (fire) as "आत" — the one word the triage depends on.
+    formData.append("model", "gpt-4o-transcribe");
+    // Bias decoding toward emergency vocabulary without pinning a language,
+    // which would defeat the point of a multilingual helpline.
+    formData.append(
+      "prompt",
+      "Emergency call to India's 112 helpline. Possible words: आग, बाढ़, एम्बुलेंस, " +
+        "पुलिस, दुर्घटना, मदद, फंस गया, खून, सांस, भूकंप, आग लगी, वाचवा, मदत, " +
+        "fire, flood, ambulance, police, accident, help, trapped, bleeding."
+    );
 
     const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
