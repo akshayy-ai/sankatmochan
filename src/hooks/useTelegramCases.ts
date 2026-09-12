@@ -25,7 +25,7 @@ type TelegramCase = {
   category: string;
   timestamp: string;
   location: string;
-  channel: "TEXT" | "VOICE" | "PHOTO" | "CALL";
+  channel: "TEXT" | "VOICE" | "PHOTO" | "CALL" | "SMS";
   audioTranscript?: string;
   imageAnalysis?: string;
   callerNumber?: string;
@@ -60,6 +60,7 @@ const CHANNEL_LABEL: Record<TelegramCase["channel"], string> = {
   VOICE: "TG VOICE",
   PHOTO: "TG PHOTO",
   CALL: "112 CALL",
+  SMS: "SMS",
 };
 
 let liveCases: CrisisCase[] = [];
@@ -77,12 +78,16 @@ function buildTimeline(t: TelegramCase, hhmm: string): TimelineEvent[] {
       action:
         t.channel === "CALL"
           ? "Inbound 112 voice call answered"
+          : t.channel === "SMS"
+          ? "Inbound SMS received"
           : `Inbound ${t.channel.toLowerCase()} message via Telegram`,
       badge: "ingest",
       duration: "0.1s",
       detail:
         t.channel === "CALL"
           ? `Vobiz telephony · caller ${t.callerNumber ?? t.senderName}`
+          : t.channel === "SMS"
+          ? `SMS gateway · sender ${t.callerNumber ?? t.senderName}`
           : `From ${t.senderName} · chat ${t.chatId}`,
       status: "done",
     },
@@ -195,7 +200,11 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
     tags: [
       t.category,
       t.language,
-      t.channel === "CALL" ? "VOBIZ:CALL" : `TG:${t.channel}`,
+      t.channel === "CALL"
+        ? "VOBIZ:CALL"
+        : t.channel === "SMS"
+        ? "SMS:INBOUND"
+        : `TG:${t.channel}`,
     ],
     slaMinutes: SLA_BY_SEVERITY[severity] ?? 30,
     isLive: true,

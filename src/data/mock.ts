@@ -19,7 +19,7 @@ export type CrisisCase = {
   translit: string;
   location: string;
   coords: string;
-  channel: "VOICE" | "WHATSAPP" | "SMS" | "TELEGRAM" | "TG VOICE" | "TG PHOTO";
+  channel: "VOICE" | "WHATSAPP" | "SMS" | "TELEGRAM" | "TG VOICE" | "TG PHOTO" | "112 CALL";
   /** True for cases ingested live (Telegram) rather than seeded into the console */
   isLive?: boolean;
   timestamp: string;

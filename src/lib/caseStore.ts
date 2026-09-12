@@ -20,7 +20,7 @@ export type LiveCase = {
   category: string;
   timestamp: string;
   location: string;
-  channel: "TEXT" | "VOICE" | "PHOTO" | "CALL";
+  channel: "TEXT" | "VOICE" | "PHOTO" | "CALL" | "SMS";
   audioTranscript?: string;
   imageAnalysis?: string;
   /** Vobiz call identifier, when the case came in over the phone */
