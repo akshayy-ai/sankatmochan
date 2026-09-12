@@ -3,7 +3,15 @@
 export type CrisisCase = {
   id: string;
   severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
-  category: "FLOOD" | "MEDICAL" | "FIRE" | "SAFETY" | "MISSING" | "DV";
+  category:
+    | "FLOOD"
+    | "MEDICAL"
+    | "FIRE"
+    | "SAFETY"
+    | "MISSING"
+    | "DV"
+    | "ACCIDENT"
+    | "GENERAL";
   lang: string;
   langCode: string;
   nativeText: string;
@@ -11,7 +19,9 @@ export type CrisisCase = {
   translit: string;
   location: string;
   coords: string;
-  channel: "VOICE" | "WHATSAPP" | "SMS";
+  channel: "VOICE" | "WHATSAPP" | "SMS" | "TELEGRAM" | "TG VOICE" | "TG PHOTO";
+  /** True for cases ingested live (Telegram) rather than seeded into the console */
+  isLive?: boolean;
   timestamp: string;
   time: string;
   status: string; // "BRIDGE OPEN", "AMB EN ROUTE", "FIRE DISPATCHED", "TRIAGE", "MONITORING"

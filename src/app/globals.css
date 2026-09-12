@@ -78,3 +78,10 @@ body {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Darken OSM raster tiles to match the console theme.
+   Carto's dark basemaps now require an API key, so we invert + hue-rotate
+   standard OSM tiles instead of pulling a keyed dark tile source. */
+.sank-dark-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.7);
+}

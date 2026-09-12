@@ -72,14 +72,13 @@ export default function IncidentMap({ cases, selected, onSelect }: Props) {
         attributionControl: false,
       });
 
-      // Dark-themed tile layer (CartoDB Dark Matter)
-      L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        {
-          maxZoom: 19,
-          subdomains: "abcd",
-        }
-      ).addTo(map);
+      // Plain OSM tiles — the only fully keyless source; Carto's dark basemaps
+      // now watermark without a key. Darkened via the CSS filter on
+      // .sank-dark-tiles so the map still reads as part of the dark console.
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        className: "sank-dark-tiles",
+      }).addTo(map);
 
       // Zoom control on the right
       L.control.zoom({ position: "topright" }).addTo(map);
@@ -87,9 +86,7 @@ export default function IncidentMap({ cases, selected, onSelect }: Props) {
       // Attribution (small, bottom-right)
       L.control
         .attribution({ prefix: false, position: "bottomright" })
-        .addAttribution(
-          '&copy; <a href="https://carto.com/">CARTO</a> · OSM'
-        )
+        .addAttribution('&copy; <a href="https://openstreetmap.org/">OpenStreetMap</a>')
         .addTo(map);
 
       mapRef.current = map;

@@ -3,6 +3,7 @@
 import { CASES, type CrisisCase } from "@/data/mock";
 import { useSlaTimer } from "@/hooks/useSlaTimer";
 import { useGeocode, useWeather } from "@/hooks/useLiveData";
+import { useAllCases } from "@/hooks/useTelegramCases";
 import IncidentMap from "./IncidentMap";
 
 const sevColor: Record<CrisisCase["severity"], string> = {
@@ -40,7 +41,8 @@ const SCRIPT_FONT: Record<string, string> = {
 type Props = { caseId: string | null };
 
 export default function CaseDetail({ caseId }: Props) {
-  const c = CASES.find((x) => x.id === caseId) ?? CASES[0];
+  const allCases = useAllCases();
+  const c = allCases.find((x) => x.id === caseId) ?? CASES[0];
   const scriptFont = SCRIPT_FONT[c.langCode] ?? "'IBM Plex Sans'";
   const sla = useSlaTimer(c.id, c.slaMinutes);
   const { geo } = useGeocode(c.coords);
@@ -54,6 +56,18 @@ export default function CaseDetail({ caseId }: Props) {
         <div className="flex items-start justify-between mb-[7px]">
           <div className="flex items-center gap-[9px] flex-wrap">
             <span className="text-[16px] font-semibold text-text-primary tracking-[.03em]">{c.id}</span>
+            {c.isLive && (
+              <span
+                className="text-[9px] font-semibold px-[6px] py-1 rounded flex items-center gap-[5px]"
+                style={{ background: "#0F2C29", color: "#3FD9C8" }}
+              >
+                <span
+                  className="w-[4px] h-[4px] rounded-full animate-pulse"
+                  style={{ background: "#3FD9C8" }}
+                />
+                LIVE INGEST
+              </span>
+            )}
             <span className={`text-[9.5px] font-semibold px-[6px] py-1 rounded ${sevColor[c.severity]}`}>
               {c.severity}
             </span>

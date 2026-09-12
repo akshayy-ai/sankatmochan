@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CASES, type CrisisCase } from "@/data/mock";
 import { useSlaTimer } from "@/hooks/useSlaTimer";
+import { useAllCases } from "@/hooks/useTelegramCases";
 
 /** Small component so we can call the SLA hook per-case inside the list */
 function SlaChip({ caseId, slaMinutes }: { caseId: string; slaMinutes: number }) {
@@ -52,18 +53,24 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState<"sev" | "age" | "sla">("sev");
 
+  /* Live Telegram cases ride at the top of the queue, ahead of seeded cases */
+  const allCases = useAllCases();
+  const liveCount = allCases.filter((c) => c.isLive).length;
+
   const filtered =
     filter === "all"
-      ? CASES
+      ? allCases
       : filter === "mine"
-      ? CASES.filter((c) => c.owner === "RK")
+      ? allCases.filter((c) => c.owner === "RK")
       : filter === "unclaimed"
-      ? CASES.filter((c) => !c.owner)
+      ? allCases.filter((c) => !c.owner)
       : filter === "critical"
-      ? CASES.filter((c) => c.severity === "CRITICAL")
+      ? allCases.filter((c) => c.severity === "CRITICAL")
       : filter === "flagged"
-      ? CASES.filter((c) => c.alert)
-      : CASES;
+      ? allCases.filter((c) => c.alert)
+      : filter === "live"
+      ? allCases.filter((c) => c.isLive)
+      : allCases;
 
   const sortBtn = (key: typeof sort) =>
     `cursor-pointer text-[9px] font-medium tracking-[.09em] px-[5px] py-[3px] rounded ${
@@ -83,8 +90,20 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[9.5px] font-semibold tracking-[.14em]" style={{ color: "#8A95A6" }}>QUEUE</span>
           <span className="text-[9.5px] font-medium" style={{ color: "#4E5A6B" }}>
-            {filtered.length}/{CASES.length}
+            {filtered.length}/{allCases.length}
           </span>
+          {liveCount > 0 && (
+            <span
+              className="text-[8.5px] font-semibold px-[5px] py-[2px] rounded flex items-center gap-[4px]"
+              style={{ background: "#0F2C29", color: "#3FD9C8" }}
+            >
+              <span
+                className="w-[4px] h-[4px] rounded-full animate-pulse"
+                style={{ background: "#3FD9C8" }}
+              />
+              {liveCount} LIVE
+            </span>
+          )}
           <span className="flex-1" />
           {(["sev", "age", "sla"] as const).map((s) => (
             <button key={s} onClick={() => setSort(s)} className={sortBtn(s)} style={sortBtnStyle(s)}>
@@ -95,6 +114,7 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
         <div className="flex flex-wrap gap-[5px]">
           {[
             { key: "all", label: "All" },
+            { key: "live", label: "Live" },
             { key: "mine", label: "Mine" },
             { key: "unclaimed", label: "Unclaimed" },
             { key: "critical", label: "Critical" },
