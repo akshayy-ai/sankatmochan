@@ -365,7 +365,20 @@ async function analyzeImage(
     const imgRes = await fetch(imageUrl);
     const imgBuffer = await imgRes.arrayBuffer();
     const base64 = Buffer.from(imgBuffer).toString("base64");
-    const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
+
+    // Telegram's file server answers with application/octet-stream, which
+    // OpenAI rejects ("Invalid MIME type. Only image types are supported"),
+    // so trusting the response header meant the model never saw the photo.
+    // Take the type from the file extension and fall back to JPEG, which is
+    // what Telegram stores compressed photos as.
+    const headerType = imgRes.headers.get("content-type") || "";
+    const extType =
+      /\.png(\?|$)/i.test(imageUrl) ? "image/png" :
+      /\.webp(\?|$)/i.test(imageUrl) ? "image/webp" :
+      /\.gif(\?|$)/i.test(imageUrl) ? "image/gif" :
+      "image/jpeg";
+    const mimeType = headerType.startsWith("image/") ? headerType : extType;
+
     const dataUrl = `data:${mimeType};base64,${base64}`;
 
     const messages: any[] = [
