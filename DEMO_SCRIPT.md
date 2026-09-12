@@ -1,77 +1,123 @@
-# Sankatmochan — 2-Minute Demo Script
+# Sankatmochan — 2 Minute Demo Script
 
-> **Total time: 2:00** | Record with screen capture + voiceover
-
----
-
-## Opening Hook (0:00 – 0:15)
-
-**[Screen: Dashboard landing — Console view with CASE-0471 selected]**
-
-> "India's 112 helpline gets 600,000 calls a day — in 22 languages. When someone calls in panic in Telugu or Marathi, every second spent translating is a second someone isn't getting help. This is Sankatmochan — AI agents that live inside the emergency workflow."
+**Live:** https://sankatmochan.rohitdarekar.dpdns.org
+**Bot:** [@sankatmochan_112_bot](https://t.me/sankatmochan_112_bot)
 
 ---
 
-## Console Walkthrough (0:15 – 0:40)
+## Before you hit record
 
-**[Screen: Click through case sidebar — show different language cases]**
+- [ ] Open https://sankatmochan.rohitdarekar.dpdns.org in a **clean browser window** (no bookmarks bar, no tabs)
+- [ ] Open Telegram on your **phone**, chat with `@sankatmochan_112_bot`, send `/start` once and clear the screen
+- [ ] Have the Hindi message below **copy-pasteable** on your phone so you aren't typing Devanagari on camera
+- [ ] Screen layout: dashboard fills the screen, phone held in frame (or screen-mirrored beside it)
 
-> "The console shows live cases in their original language — Telugu, Hindi, Marathi, Tamil, Bengali. Each case has real-time translation, severity triage, and a map pinpointing the incident."
-
-**[Screen: Click a CRITICAL case, show the map with red pulse marker]**
-
-> "This flood case came in Telugu — the AI translated it, classified it CRITICAL, and plotted the location on the map. The operator sees everything without speaking the language."
-
----
-
-## CopilotKit Agent (0:40 – 1:10)
-
-**[Screen: Click "Summarise this case" suggestion in the CopilotKit panel]**
-
-> "The CopilotKit agent sits right beside the operator. It sees the selected case — the native text, the translation, the timeline — and it can act."
-
-**[Screen: Show the AI response with case summary]**
-
-> "Ask it to summarize, search for related disaster news via Exa, or escalate to NDRF. When it proposes a dispatch, there's a human-in-the-loop approval gate — the operator confirms before anything goes out."
-
-**[Screen: Show escalation flow if time permits]**
+> **Rehearse the ingest once.** A case takes ~3-6s to appear (3s poll + model latency). Know that beat so you don't fill it with "um".
 
 ---
 
-## Voice Agent (1:10 – 1:40)
+## The script
 
-**[Screen: Click the 📞 Voice tab, click "Start 112 Call"]**
+### 0:00 — The problem (15s)
 
-> "Now the breakthrough — the OpenAI Realtime Voice Agent. Click to simulate a 112 call."
+> "India's 112 emergency line takes about 200 million calls a year, across 22 official languages.
+> But the operator picking up in Pune speaks Marathi and Hindi. When a call comes in Telugu or
+> Bengali, the first ninety seconds are spent working out *what language this even is* — before
+> anyone finds out someone is drowning."
 
-**[Screen: Speak in Hindi — "Mera ghar mein paani aa raha hai, bahut darr lag raha hai"]**
+### 0:15 — What it is (10s)
 
-> "I'm speaking Hindi — 'Water is coming into my house, I'm very scared.' The agent responds in Hindi, asks for my location, assesses severity, and logs the case — all in real time, no human translator needed."
+Dashboard on screen, queue visible.
 
-**[Screen: Show the transcript with CALLER / 112 AGENT / SYSTEM entries, case created alert]**
+> "Sankatmochan is a multilingual emergency response console. Four channels in, one queue out —
+> and every case you see here arrived through a real API."
 
-> "It automatically created the case and dispatched the nearest rescue team. The entire call took 30 seconds instead of 5 minutes."
+### 0:25 — The live ingest (40s) ← **this is the demo**
+
+Pick up your phone. Say what you're doing *while* you do it.
+
+> "I'm going to report an emergency, in Hindi, from my own phone. Nothing staged."
+
+Send this to the bot:
+
+```
+नदी का पानी घर में घुस गया है, हम छत पर फंसे हैं, दो बच्चे भी साथ हैं
+```
+
+*(River water has entered the house, we're trapped on the roof, two children with us)*
+
+Then — **point at the screen and stop talking.** Let it land.
+
+When the case appears:
+
+> "Three seconds. Detected Hindi, translated it, classified it CRITICAL, category FLOOD,
+> geocoded the location, and started an eight-minute SLA countdown. The operator never
+> had to know what language that was."
+
+Click the case. Scroll the timeline.
+
+> "And every step is auditable — language ID, translation, classification, each one logged."
+
+### 1:05 — The other channels (30s)
+
+Send a **voice note** in Hindi. While it processes:
+
+> "Voice note — Whisper transcribes it, then the same triage runs. Because in a real
+> emergency people don't type, they shout."
+
+Then send a **photo** (fire, flood, accident — anything).
+
+> "And a photo. GPT-4o vision reads the scene — what's burning, how many people, what
+> hazards are visible. A caller who can't describe it can just show it."
+
+### 1:35 — Why it's agentic (15s)
+
+> "Nobody clicked anything. The system watched a channel, decided what mattered, triaged it,
+> and put it in front of a human with the context already assembled. The operator arrives
+> to a decision, not a transcript."
+
+### 1:50 — Close (10s)
+
+> "Live right now at sankatmochan.rohitdarekar.dpdns.org. Message the bot yourself —
+> it'll answer in your language."
 
 ---
 
-## Dispatch + Closing (1:40 – 2:00)
+## If you have a Vobiz number
 
-**[Screen: Brief flash of Ambiguous AI workspace with task created]**
+Swap this in at 1:05 — it's stronger than the voice note.
 
-> "Every dispatch is tracked in the Ambiguous AI workspace — tasks, emails, audit trail. Nothing falls through the cracks."
+Set the number's Answer URL to:
+```
+https://sankatmochan.rohitdarekar.dpdns.org/api/vobiz/answer
+```
 
-**[Screen: Return to Console view — show the full dashboard]**
+Then **call it on camera**. The line answers in Hindi, you speak Hindi, it replies in Hindi
+with a case number — and the case appears on the dashboard as you hang up.
 
-> "Sankatmochan. Four AI agents — voice, copilot, dispatch, news — living inside the one place where response time is literally life or death. Built for India's 112. Built at AI Tinkerers."
-
-**[End card: Project name + GitHub link + team]**
+> "That's a real phone call. No app, no smartphone needed. Which matters, because the
+> people who most need 112 are often the ones without either."
 
 ---
 
-## Recording Tips
+## Guardrails
 
-- **Resolution**: 1920×1080, browser at 100% zoom
-- **Browser**: Use Chrome/Edge for WebRTC voice
-- **Audio**: Use a quiet room, speak clearly for the voice demo
-- **Pace**: Don't rush — let each screen breathe for 2-3 seconds
-- **Fallback**: If voice API has latency, pre-record the Hindi call segment separately and splice in
+**Do not** say "real-time database" or "production-ready". Cases live in memory and reset on
+restart. If asked, say so plainly — judges respect a known limitation far more than a bluff.
+
+**Do** say the SLA timers, geocoding, weather and translations are live API calls, because
+they are. The seeded cases in the queue are illustrative; the ones you create on camera are not.
+
+**If ingest stalls** — don't narrate the failure. Say "while that comes through" and click an
+existing case to show the timeline and map. Come back to it.
+
+---
+
+## Health check before recording
+
+```bash
+curl -s -o /dev/null -w "site: %{http_code}\n" https://sankatmochan.rohitdarekar.dpdns.org/
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo" | python3 -m json.tool
+```
+
+Expect `200`, and a `url` matching the domain with `pending_update_count: 0`.
