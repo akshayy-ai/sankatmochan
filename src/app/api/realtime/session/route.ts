@@ -126,8 +126,10 @@ export async function POST() {
   }
 
   try {
+    // /v1/realtime/sessions now 404s; ephemeral keys are minted at
+    // /v1/realtime/client_secrets with the config nested under `session`.
     const response = await fetch(
-      "https://api.openai.com/v1/realtime/sessions",
+      "https://api.openai.com/v1/realtime/client_secrets",
       {
         method: "POST",
         headers: {
@@ -135,14 +137,18 @@ export async function POST() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-realtime",
-          voice: "coral",
-          modalities: ["audio", "text"],
-          instructions: SANKATMOCHAN_VOICE_INSTRUCTIONS,
-          tools: VOICE_TOOLS,
-          tool_choice: "auto",
-          input_audio_transcription: {
-            model: "gpt-realtime-whisper",
+          session: {
+            type: "realtime",
+            model: "gpt-realtime",
+            instructions: SANKATMOCHAN_VOICE_INSTRUCTIONS,
+            tools: VOICE_TOOLS,
+            tool_choice: "auto",
+            audio: {
+              input: {
+                transcription: { model: "whisper-1" },
+              },
+              output: { voice: "coral" },
+            },
           },
         }),
       },
@@ -158,7 +164,12 @@ export async function POST() {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    // Callers written against the old shape read client_secret.value; the new
+    // response puts the key at the top level. Return both.
+    return NextResponse.json({
+      ...data,
+      client_secret: { value: data.value, expires_at: data.expires_at },
+    });
   } catch (err) {
     console.error("[realtime/session] Error:", err);
     return NextResponse.json(
