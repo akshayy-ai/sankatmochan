@@ -35,24 +35,32 @@ const SEGMENTS = [
     text: "India's 112 emergency line takes about 200 million calls a year, across 22 official languages. The operator picking up in Pune speaks two of them.",
   },
   {
-    at: 10.0,
-    text: "A flood report arrives in Hindi, from a phone. Three seconds later it's on the operator's queue: language detected, translated, classified critical, geocoded, with an S L A countdown already running.",
+    at: 9.0,
+    text: "Four emergencies, four languages, two different channels — all triaged into one queue. These arrived seconds ago from a real phone.",
   },
   {
-    at: 23.0,
-    text: "The caller sends more detail. It doesn't create a second case — it joins the first, and it's triaged with the incident, so the follow-up escalates the flood instead of becoming a meaningless fragment.",
+    at: 18.0,
+    text: "A fire, reported in Hindi. Classified critical, geocoded to Kothrud, with an S L A countdown already running.",
+  },
+  {
+    at: 27.0,
+    text: "The caller's own words beside the English translation, a live incident map, and every step logged — language identified, translated, classified.",
   },
   {
     at: 38.0,
-    text: "The original script beside the English translation, a live map, and every step logged: language identification, translation, classification.",
+    text: "The caller sent a second message. It didn't open a new case — it joined this one, and escalated it. Follow-up detail is where emergency calls actually live.",
   },
   {
     at: 50.0,
-    text: "Punjabi over S M S, from a feature phone with no data. Malayalam. Spanish. Fifteen languages tested, with no language configured anywhere.",
+    text: "Punjabi, over S M S — from a feature phone with no data connection. That's who actually dials 112.",
   },
   {
-    at: 64.0,
-    text: "Five channels in — S M S, text, voice notes, photos, and phone calls — one triaged queue out. Nobody clicked anything.",
+    at: 58.0,
+    text: "Malayalam. Spanish. Fifteen languages tested, with no language configured anywhere.",
+  },
+  {
+    at: 68.0,
+    text: "Five channels in, one queue out. Nobody clicked anything.",
   },
 ];
 
@@ -75,10 +83,9 @@ async function tts(text, out) {
 }
 
 // Largest webm is the full-session recording.
-const vids = readdirSync("demo-recording")
-  .filter((f) => f.endsWith(".webm"))
-  .map((f) => ({ f: `demo-recording/${f}`, s: statSync(`demo-recording/${f}`).size }))
-  .sort((a, b) => b.s - a.s);
+const vids = readdirSync("demo-recording/dashboard").map((f) => `dashboard/${f}`).filter((f) => f.endsWith(".webm")).map((f) => ({ f: `demo-recording/${f}`, s: statSync(`demo-recording/${f}`).size })).sort((a, b) => b.s - a.s);
+const _unused = readdirSync("demo-recording")
+  .filter((f) => f.endsWith(".webm"));
 const VIDEO = vids[0].f;
 console.log("video:", VIDEO);
 
@@ -112,9 +119,9 @@ execFileSync(
     "-c:a", "aac",
     "-b:a", "192k",
     "-shortest",
-    "sankatmochan-demo.mp4",
+    "sankatmochan-dashboard.mp4",
   ],
   { stdio: "inherit" }
 );
 
-console.log("→ sankatmochan-demo.mp4");
+console.log("→ sankatmochan-dashboard.mp4");
