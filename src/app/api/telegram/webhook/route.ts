@@ -32,14 +32,42 @@ export async function GET() {
 
 // POST — Telegram sends updates here
 export async function POST(req: NextRequest) {
+  let message: TelegramMessage | undefined;
   try {
-    const body = await req.json();
-    const message = body?.message;
+    message = (await req.json())?.message;
+  } catch {
+    return NextResponse.json({ ok: true });
+  }
 
-    if (!message) {
-      return NextResponse.json({ ok: true });
-    }
+  if (!message) {
+    return NextResponse.json({ ok: true });
+  }
 
+  // Acknowledge before doing the work. Voice and photo handling takes tens of
+  // seconds (file download plus Whisper or vision), long enough that the edge
+  // gives up on the origin and hands Telegram a 502 — which Telegram then
+  // retries with an exponential backoff that stalls every later message too.
+  void processMessage(message).catch((err) =>
+    console.error("Telegram processing error:", err)
+  );
+
+  return NextResponse.json({ ok: true });
+}
+
+type TelegramMessage = {
+  chat: { id: number };
+  from?: { first_name?: string; last_name?: string };
+  text?: string;
+  caption?: string;
+  location?: { latitude: number; longitude: number };
+  photo?: { file_id: string }[];
+  voice?: { file_id: string };
+  audio?: { file_id: string };
+};
+
+/** Runs after the webhook has already been acknowledged. */
+async function processMessage(message: TelegramMessage) {
+  try {
     const chatId = message.chat.id;
     const senderName =
       [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ") ||
@@ -59,7 +87,7 @@ export async function POST(req: NextRequest) {
         "📍 Share your location for faster response.\n" +
         "📞 For phone emergencies, call 112."
       );
-      return NextResponse.json({ ok: true });
+      return;
     }
 
     // Handle /help command
@@ -72,7 +100,7 @@ export async function POST(req: NextRequest) {
         "📸 *Photos*: Send pictures of fires, floods, accidents, injuries — AI vision analyzes the scene\n\n" +
         "Supported: Hindi, Marathi, Telugu, Tamil, Bengali, Gujarati, Kannada, Malayalam, Odia, Punjabi, English"
       );
-      return NextResponse.json({ ok: true });
+      return;
     }
 
     // Handle location sharing
@@ -82,7 +110,7 @@ export async function POST(req: NextRequest) {
         `📍 Location received: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\n\n` +
         "Now describe your emergency — type, voice note 🎤, or photo 📸"
       );
-      return NextResponse.json({ ok: true });
+      return;
     }
 
     // ── Handle photo messages ─────────────────────────────────
@@ -96,7 +124,7 @@ export async function POST(req: NextRequest) {
       const imageAnalysis = await analyzeImage(fileId, message.caption);
       if (!imageAnalysis) {
         await sendTelegram(chatId, "❌ Could not analyze image. Please describe your emergency in text.");
-        return NextResponse.json({ ok: true });
+        return;
       }
 
       const caseId = nextCaseId("TG");
@@ -133,7 +161,7 @@ export async function POST(req: NextRequest) {
         `\n\n📍 Share your location for faster response.`
       );
 
-      return NextResponse.json({ ok: true, caseId, channel: "photo" });
+      return;
     }
 
     // ── Handle voice messages ──────────────────────────────────
@@ -141,7 +169,7 @@ export async function POST(req: NextRequest) {
       const fileId = message.voice?.file_id || message.audio?.file_id;
       if (!fileId) {
         await sendTelegram(chatId, "❌ Could not process audio. Please try again or type your emergency.");
-        return NextResponse.json({ ok: true });
+        return;
       }
 
       await sendTelegram(chatId, "🎤 _Transcribing your voice message..._");
@@ -149,7 +177,7 @@ export async function POST(req: NextRequest) {
       const transcript = await transcribeVoice(fileId);
       if (!transcript) {
         await sendTelegram(chatId, "❌ Could not transcribe audio. Please type your emergency instead.");
-        return NextResponse.json({ ok: true });
+        return;
       }
 
       const analysis = await analyzeEmergency(transcript);
@@ -185,12 +213,12 @@ export async function POST(req: NextRequest) {
         `\n\n📍 Share your location for faster response.`
       );
 
-      return NextResponse.json({ ok: true, caseId, channel: "voice" });
+      return;
     }
 
     // ── Handle text messages ──────────────────────────────────
     if (!message.text) {
-      return NextResponse.json({ ok: true });
+      return;
     }
 
     const text = message.text;
@@ -208,7 +236,7 @@ export async function POST(req: NextRequest) {
         "📍 Share your location\n\n" +
         "📞 For immediate help, call *112*"
       );
-      return NextResponse.json({ ok: true, is_emergency: false });
+      return;
     }
 
     // ── Emergency — create case ──
@@ -244,10 +272,8 @@ export async function POST(req: NextRequest) {
       `\n\n📍 Share your location for faster response.`
     );
 
-    return NextResponse.json({ ok: true, caseId });
   } catch (err) {
     console.error("Telegram webhook error:", err);
-    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
   }
 }
 
