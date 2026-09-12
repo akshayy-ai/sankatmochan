@@ -11,12 +11,16 @@ import VoiceCallPanel from "@/components/VoiceCallPanel";
 import { EmergencyContext } from "@/components/EmergencyContext";
 import { GenerativeUI } from "@/components/GenerativeUI";
 import { CASES } from "@/data/mock";
+import { useAllCases } from "@/hooks/useTelegramCases";
 
 export default function Home() {
   const [selectedCase, setSelectedCase] = useState<string | null>("CASE-0471");
   const [view, setView] = useState<ViewKey>("console");
 
-  const selectedCaseData = CASES.find((c) => c.id === selectedCase) ?? null;
+  // Live ids are TG-/SMS-/CALL-; the seeded array is all CASE-04xx, so looking
+  // only in CASES hands the agent a null context for every live case.
+  const allCases = useAllCases();
+  const selectedCaseData = allCases.find((c) => c.id === selectedCase) ?? null;
 
   const handleSelectCase = useCallback((id: string) => {
     setSelectedCase(id);

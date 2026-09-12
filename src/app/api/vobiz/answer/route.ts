@@ -40,11 +40,25 @@ function xml(body: string) {
   });
 }
 
-/** Absolute URL for the gather callback, derived from the inbound request. */
+/**
+ * Absolute URL for the gather callback.
+ *
+ * req.nextUrl reflects the container's own bind address (0.0.0.0:3000) behind
+ * the tunnel, not the public hostname — a callback built from it sends the
+ * caller's speech nowhere. Prefer an explicit origin, then the proxy's
+ * forwarded headers, and only then the request itself.
+ */
 function gatherActionUrl(req: NextRequest) {
+  const explicit = process.env.PUBLIC_BASE_URL;
+  const fwdHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  const fwdProto = req.headers.get("x-forwarded-proto") || "https";
+
   const base =
-    process.env.PUBLIC_BASE_URL ||
-    `${req.nextUrl.protocol}//${req.nextUrl.host}`;
+    explicit ||
+    (fwdHost && !fwdHost.startsWith("0.0.0.0") && !fwdHost.startsWith("127.")
+      ? `${fwdProto}://${fwdHost}`
+      : `${req.nextUrl.protocol}//${req.nextUrl.host}`);
+
   return `${base.replace(/\/$/, "")}/api/vobiz/gather`;
 }
 

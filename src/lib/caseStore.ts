@@ -135,7 +135,10 @@ Severity guide:
       category: parsed.category || "GENERAL",
       location: parsed.location || "",
       response: parsed.response || "",
-      is_emergency: parsed.is_emergency !== false,
+      // The prompt defines NONE as "not an emergency at all", so reconcile the
+      // two fields rather than trusting is_emergency alone — a NONE severity
+      // with is_emergency omitted is how a junk case reached the queue.
+      is_emergency: parsed.is_emergency !== false && parsed.severity !== "NONE",
     };
   } catch {
     return { ...FALLBACK, translation: text };

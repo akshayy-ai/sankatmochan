@@ -449,8 +449,15 @@ async function transcribeVoice(fileId: string): Promise<string | null> {
       body: formData,
     });
 
+    // OpenAI error bodies are valid JSON, so .json() succeeds and .text is
+    // undefined — returning null with nothing logged looks identical to an
+    // unintelligible clip. Log the real reason.
+    if (!whisperRes.ok) {
+      console.error("[transcribe] OpenAI error:", whisperRes.status, await whisperRes.text());
+      return null;
+    }
     const whisperData = await whisperRes.json();
-    return whisperData.text || null;
+    return (whisperData.text as string | undefined)?.trim() || null;
   } catch (err) {
     console.error("Voice transcription error:", err);
     return null;
@@ -464,13 +471,24 @@ async function sendTelegram(chatId: number, text: string) {
     return;
   }
 
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: "Markdown",
-    }),
-  });
+  // Replies interpolate untrusted transcript and model text inside _italics_.
+  // One unmatched _ * [ or backtick makes Telegram reject the whole message,
+  // so the bot would go silent after filing the case. Retry without markdown.
+  const send = (mode?: string) =>
+    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        ...(mode ? { parse_mode: mode } : {}),
+      }),
+    });
+
+  const res = await send("Markdown");
+  if (!res.ok) {
+    console.error("[telegram] markdown send failed", res.status, await res.text());
+    const plain = await send();
+    if (!plain.ok) console.error("[telegram] plain retry failed", plain.status);
+  }
 }

@@ -71,6 +71,12 @@ function notify() {
   subscribers.forEach((fn) => fn());
 }
 
+/** NONE is a real triage outcome, not an unknown label — show it as LOW. */
+function normSeverity(s: string): CrisisCase["severity"] {
+  if (s === "NONE") return "LOW";
+  return (["CRITICAL", "HIGH", "MEDIUM", "LOW"].includes(s) ? s : "MEDIUM") as CrisisCase["severity"];
+}
+
 function buildTimeline(t: TelegramCase, hhmm: string): TimelineEvent[] {
   const events: TimelineEvent[] = [
     {
@@ -145,7 +151,7 @@ function buildTimeline(t: TelegramCase, hhmm: string): TimelineEvent[] {
     },
     {
       time: hhmm,
-      action: `Classified ${t.severity} · ${t.category}`,
+      action: `Classified ${normSeverity(t.severity)} · ${t.category}`,
       badge: "classify",
       duration: "0.5s",
       detail: "Severity and category assigned by triage model",
@@ -173,9 +179,7 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
     timeZone: "Asia/Kolkata",
   });
 
-  const severity = (
-    ["CRITICAL", "HIGH", "MEDIUM", "LOW"].includes(t.severity) ? t.severity : "MEDIUM"
-  ) as CrisisCase["severity"];
+  const severity = normSeverity(t.severity);
 
   const hasPin = /-?\d+\.\d+\s*,\s*-?\d+\.\d+/.test(t.location);
 
