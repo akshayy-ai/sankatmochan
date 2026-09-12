@@ -20,14 +20,56 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: sankatmochan-tunnel
     restart: unless-stopped
-    # A named tunnel gives a stable hostname that survives restarts, which is
-    # what a long-lived deployment needs. Set CLOUDFLARE_TUNNEL_TOKEN in
-    # .env.tunnel from the token Cloudflare shows when you create the tunnel.
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    env_file:
-      - .env.tunnel
+    # Quick tunnel: no Cloudflare account or domain needed. The trade-off is a
+    # fresh *.trycloudflare.com hostname on every start, so the metrics server
+    # is exposed for the registrar below to discover the current one.
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:20241 --url http://app:3000
     depends_on:
       - app
+    networks:
+      - sankatnet
+
+  registrar:
+    image: curlimages/curl:latest
+    container_name: sankatmochan-registrar
+    restart: on-failure:5
+    depends_on:
+      - tunnel
+    # Because the quick-tunnel hostname changes on every restart, re-point the
+    # Telegram webhook at the current one each time the stack comes up.
+    # Without this a reboot leaves the bot registered to a dead URL.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        echo "waiting for tunnel to publish a hostname..."
+        host=""
+        for i in $$(seq 1 60); do
+          host=$$(curl -fsS http://tunnel:20241/quicktunnel 2>/dev/null \
+                  | sed -n 's/.*"hostname":"\([^"]*\)".*/\1/p') || true
+          [ -n "$$host" ] && break
+          sleep 3
+        done
+        if [ -z "$$host" ]; then
+          echo "ERROR: tunnel hostname never appeared" >&2
+          exit 1
+        fi
+        url="https://$$host"
+        echo "PUBLIC URL: $$url"
+
+        echo "waiting for app..."
+        for i in $$(seq 1 60); do
+          curl -fsS -o /dev/null http://app:3000/ && break
+          sleep 3
+        done
+
+        echo "registering telegram webhook..."
+        curl -fsS "http://app:3000/api/telegram/setup?url=$$url" || true
+        echo
+        echo "=================================================="
+        echo " SANKATMOCHAN IS LIVE AT: $$url"
+        echo " Vobiz Answer URL:        $$url/api/vobiz/answer"
+        echo "=================================================="
     networks:
       - sankatnet
 
