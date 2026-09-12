@@ -353,21 +353,47 @@ async function analyzeImage(
     const messages: any[] = [
       {
         role: "system",
-        content: `You are an emergency scene analyst for India's 112 helpline. Analyze the photo and respond with JSON:
+        content: `You are an emergency scene analyst for India's 112 helpline.
+
+Someone deliberately sent this photograph TO AN EMERGENCY NUMBER. Assume they
+had a reason. Your question is not "is a disaster happening in this frame right
+now" — it is "would a responder want to see this?"
+
+Answer with JSON:
 {
-  "is_emergency": true or false — does this image actually show an emergency, hazard, injury or person in danger? A selfie, screenshot, meme, pet, food or ordinary scene is false,
-  "description": "What you see in the image — describe the emergency situation clearly",
+  "is_emergency": true or false — see the rule below,
+  "description": "What you see — describe the situation concretely",
   "severity": "CRITICAL | HIGH | MEDIUM | LOW",
   "category": "FLOOD | MEDICAL | FIRE | SAFETY | MISSING | ACCIDENT | DV | GENERAL",
-  "location": "any identifiable location clues (signs, landmarks, building names)",
+  "location": "any identifiable location clues (signs, landmarks, plates)",
   "peopleCount": "estimated number of people visible or 'None visible'",
-  "injuries": "description of any visible injuries, or empty string",
-  "hazards": "immediate hazards visible (fire, water, collapsed structure, etc.), or empty string",
-  "language": "if there is text/signage in the image, what language, otherwise 'Visual'",
-  "response": "Brief response to the sender acknowledging the emergency and what help is being dispatched"
+  "injuries": "visible injuries, or empty string",
+  "hazards": "immediate hazards visible, or empty string",
+  "language": "language of any signage, otherwise 'Visual'",
+  "response": "Brief reply to the sender acknowledging what was reported"
 }
 
-Be specific about what you see. If the image is not an emergency, classify as LOW/GENERAL.`,
+is_emergency is TRUE for anything a responder would act on, INCLUDING the
+aftermath of an incident that has already happened:
+- Crashed, overturned or damaged vehicles — even with nobody visibly hurt and
+  no active danger. A wrecked motorcycle or car IS a reportable accident.
+- Debris, wreckage, collapsed or damaged structures
+- Fire, smoke, scorching; flooding or standing water
+- Injured, unconscious, trapped or distressed people
+- A crowd gathered around something, or emergency services already present
+- Confrontation, violence, or a person who appears unsafe or followed
+- Blocked roads, downed poles or wires, spills
+
+is_emergency is FALSE only when the image is plainly unrelated to any incident:
+a selfie or portrait with nothing happening, a meme, an app screenshot, food, a
+pet, a document, or ordinary scenery.
+
+WHEN UNCERTAIN, SET IT TRUE. A false positive costs an operator five seconds.
+A missed accident costs far more. Recall matters more than precision here.
+
+Severity: CRITICAL for life-threatening or active danger; HIGH for serious
+damage or injury; MEDIUM for an accident aftermath with no visible casualty;
+LOW only for a genuine non-incident.`,
       },
       {
         role: "user",
@@ -399,6 +425,11 @@ Be specific about what you see. If the image is not an emergency, classify as LO
 
     const data = await res.json();
     const parsed = JSON.parse(data.choices?.[0]?.message?.content || "{}");
+    console.log(
+      `[vision] is_emergency=${parsed.is_emergency} ${parsed.severity}/${parsed.category} :: ` +
+        `${String(parsed.description || "").slice(0, 100)}`
+    );
+
     return {
       description: parsed.description || "Image received",
       is_emergency: parsed.is_emergency !== false,

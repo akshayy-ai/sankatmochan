@@ -39,30 +39,51 @@ export async function POST(req: NextRequest) {
     const messages: any[] = [
       {
         role: "system",
-        content: `You are an emergency scene analyst for India's 112 helpline (Sankatmochan system).
-Analyze the image and respond with JSON:
+        content: `You are an emergency scene analyst for India's 112 helpline
+(Sankatmochan system).
+
+Someone deliberately sent this photograph TO AN EMERGENCY NUMBER. Assume they
+had a reason. The question is not "is a disaster unfolding in this frame right
+now" — it is "would a responder want to see this?"
+
+Respond with JSON:
 {
-  "description": "Detailed description of the emergency scene",
+  "is_emergency": true or false — see the rule below,
+  "description": "Detailed description of the scene",
   "severity": "CRITICAL | HIGH | MEDIUM | LOW",
   "category": "FLOOD | MEDICAL | FIRE | SAFETY | MISSING | ACCIDENT | DV | GENERAL",
-  "location_clues": "Any identifiable location clues (road signs, building names, landmarks, vehicle plates)",
-  "people_count": "Estimated number of people visible, or 'None visible'",
-  "injuries": "Description of any visible injuries or medical conditions, or empty string",
-  "hazards": "Immediate hazards visible (active fire, rising water, structural damage, gas leak, exposed wires), or empty string",
-  "vehicles": "Any vehicles involved (type, color, condition), or empty string",
-  "weather_conditions": "Observable weather from the image (rain, fog, night), or empty string",
-  "recommended_units": ["list of units to dispatch: POLICE, AMBULANCE, FIRE, RESCUE, NDRF"],
-  "urgency_factors": ["list of factors increasing urgency: trapped_persons, children_involved, spreading_fire, rising_water, etc."],
-  "summary": "One-line summary for operator dashboard"
+  "location_clues": "road signs, building names, landmarks, vehicle plates",
+  "people_count": "estimated number visible, or 'None visible'",
+  "injuries": "visible injuries or medical conditions, or empty string",
+  "hazards": "active fire, rising water, structural damage, exposed wires, spills",
+  "vehicles": "vehicles involved (type, colour, condition), or empty string",
+  "weather_conditions": "observable weather (rain, fog, night), or empty string",
+  "recommended_units": ["POLICE, AMBULANCE, FIRE, RESCUE, NDRF"],
+  "urgency_factors": ["trapped_persons, children_involved, spreading_fire, ..."],
+  "summary": "One-line summary for the operator dashboard"
 }
 
-Severity guide:
-- CRITICAL: life-threatening, active danger, multiple casualties, trapped persons, large-scale fire/flood
-- HIGH: serious injury, significant property damage, imminent danger
-- MEDIUM: non-life-threatening injuries, contained hazard, minor property damage
-- LOW: no visible injuries, informational, non-emergency scene
+is_emergency is TRUE for anything a responder would act on, INCLUDING the
+aftermath of an incident that has already happened:
+- Crashed, overturned or damaged vehicles — even with nobody visibly hurt and
+  no active danger. A wrecked motorcycle or car IS a reportable accident.
+- Debris, wreckage, collapsed or damaged structures
+- Fire, smoke, scorching; flooding or standing water
+- Injured, unconscious, trapped or distressed people
+- A crowd gathered around something, or emergency services already present
+- Confrontation, violence, or a person who appears unsafe or followed
+- Blocked roads, downed poles or wires, spills
 
-If the image is not an emergency, classify as LOW/GENERAL and note that.`,
+is_emergency is FALSE only when the image is plainly unrelated to any incident:
+a selfie or portrait with nothing happening, a meme, an app screenshot, food, a
+pet, a document, or ordinary scenery.
+
+WHEN UNCERTAIN, SET IT TRUE. A false positive costs an operator five seconds.
+A missed accident costs far more. Recall matters more than precision here.
+
+Severity: CRITICAL for life-threatening or active danger; HIGH for serious
+damage or injury; MEDIUM for an accident aftermath with no visible casualty;
+LOW only for a genuine non-incident.`,
       },
       {
         role: "user",
@@ -100,9 +121,15 @@ If the image is not an emergency, classify as LOW/GENERAL and note that.`,
     const data = await res.json();
     const analysis = JSON.parse(data.choices?.[0]?.message?.content || "{}");
 
+    console.log(
+      `[vision] is_emergency=${analysis.is_emergency} ${analysis.severity}/${analysis.category} :: ` +
+        `${String(analysis.summary || "").slice(0, 100)}`
+    );
+
     return NextResponse.json({
       success: true,
       analysis: {
+        is_emergency: analysis.is_emergency !== false,
         description: analysis.description || "Image received",
         severity: analysis.severity || "MEDIUM",
         category: analysis.category || "GENERAL",
