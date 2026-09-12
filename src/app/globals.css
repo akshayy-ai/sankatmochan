@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border-clr);
+  --color-text-primary: var(--t1);
+  --color-text-secondary: var(--t2);
+  --color-text-dim: var(--t3);
+  --color-critical: var(--critical);
+  --color-high: var(--high);
+  --color-medium: var(--medium);
+  --color-resolved: var(--resolved);
+  --color-teal: var(--teal);
+  --color-teal-dim: var(--teal-dim);
+  --color-amber: var(--amber);
+  --color-blue: var(--blue);
+  --color-green: var(--green);
+  --font-sans: 'IBM Plex Sans', var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', var(--font-geist-mono), ui-monospace, monospace;
+}
+
+:root {
+  --bg: #08090C;
+  --surface: #0B0E13;
+  --surface-raised: #0D1117;
+  --border-clr: #1A2029;
+  --t1: #E6EAF0;
+  --t2: #8A95A6;
+  --t3: #5A6575;
+  --critical: #F2544F;
+  --high: #E8A33D;
+  --medium: #5B8CFF;
+  --resolved: #5BC98C;
+  --teal: #3FD9C8;
+  --teal-dim: #0F2C29;
+  --amber: #E8A33D;
+  --blue: #5B8CFF;
+  --green: #5BC98C;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #222A36 #0B0E13;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0B0E13; }
+::-webkit-scrollbar-thumb { background: #222A36; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #33404F; }
+
+body {
+  background: var(--bg);
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* React Flow dark command center */
+.react-flow__background { background: var(--surface) !important; }
+.react-flow__minimap { background: var(--surface-raised) !important; border: 1px solid var(--border-clr) !important; border-radius: 6px !important; }
+.react-flow__controls { background: var(--surface-raised) !important; border: 1px solid var(--border-clr) !important; border-radius: 6px !important; }
+.react-flow__controls button { background: var(--surface-raised) !important; color: var(--t2) !important; border-bottom: 1px solid var(--border-clr) !important; }
+.react-flow__controls button:hover { background: #1E2328 !important; }
+
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-pulse-critical { animation: pulse-critical 1.5s ease-in-out infinite; }
+
+@keyframes blink-sla {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.animate-blink-sla { animation: blink-sla 1s ease-in-out infinite; }
+
+@keyframes sankSlide {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

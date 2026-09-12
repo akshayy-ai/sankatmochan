@@ -1,0 +1,43 @@
+{
+  "name": "sankatmochan",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.112",
+    "@auth0/nextjs-auth0": "^4.29.0",
+    "@copilotkit/react-core": "^1.70.1",
+    "@copilotkit/runtime": "^1.70.3",
+    "@reactflow/background": "^11.3.14",
+    "@reactflow/controls": "^11.2.14",
+    "@reactflow/core": "^11.11.4",
+    "@reactflow/minimap": "^11.7.14",
+    "@types/leaflet": "^1.9.22",
+    "exa-js": "^2.19.0",
+    "framer-motion": "^13.2.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.45.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-leaflet": "^5.0.0",
+    "reactflow": "^11.11.4",
+    "socket.io-client": "^4.8.3",
+    "zod": "^4.6.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
