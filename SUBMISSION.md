@@ -1,124 +1,110 @@
-# Hackathon Submission — Copy-Paste Ready
+# Agents, Everywhere — Submission
+
+**Team:** Agentic Mindmesh
+**Live:** https://sankatmochan.rohitdarekar.dpdns.org
+**Bot:** https://t.me/sankatmochan_112_bot
+**Repo:** https://github.com/akshayy-ai/sankatmochan
 
 ---
 
 ## Project Name
 
 ```
-Sankatmochan (संकटमोचन) — Multilingual AI Emergency Response Console
+Sankatmochan — Multilingual 112 Emergency Response Grid
+```
+
+---
+
+## Project Description
+
+```
+India's 112 emergency helpline handles roughly 200 million calls a year across 22
+official languages. The operator who picks up in Pune speaks Marathi and Hindi.
+When a call arrives in Telugu, Bengali or Punjabi, the first ninety seconds are
+spent working out what language it even is — before anyone learns that someone is
+drowning. That gap is where people die.
+
+Sankatmochan is an agent that lives inside the emergency-response console itself,
+not beside it in a chat window. The environment is what defines the whole design:
+an operator under load cannot type prompts. So the agent watches five ingest
+channels, decides what matters, and puts a triaged case in front of a human with
+the context already assembled. The operator arrives at a decision, not a transcript.
+
+FIVE CHANNELS, ONE QUEUE
+
+- Telegram text, in any Indian language
+- Telegram voice notes, transcribed and translated
+- Telegram photos, where the caller shows what they cannot describe
+- SMS, via an Android handset acting as a gateway — this reaches feature phones
+  and no-data areas, which is precisely the population most likely to need 112
+- Inbound phone calls over Vobiz telephony, answered and triaged in Hindi
+
+Each one lands in the same operator queue within about three seconds, carrying a
+severity, a category, an English translation beside the original script, a
+reverse-geocoded location, live local weather, and an SLA countdown scaled to
+severity.
+
+WHY IT IS AN AGENT, NOT A CHATBOT
+
+Nobody invokes it. There is no prompt box in the ingest path. The system watches
+channels, classifies intent — distinguishing a real emergency from a greeting so
+casual messages never become cases — routes by severity, enriches with external
+data, and escalates. A chatbot answers when spoken to; this decides what deserves
+a human's attention, and its presence inside the console is what makes that
+possible.
+
+TECHNICAL EXECUTION
+
+Next.js 16 (App Router, React 19, Turbopack) and TypeScript. OpenAI does the
+reasoning: gpt-4o-mini for language identification, translation and triage;
+gpt-4o vision to read emergency scenes in photographs; gpt-4o-transcribe for
+speech. We moved off whisper-1 after measuring both on identical Hindi audio —
+whisper-1 rendered "आग" (fire) as "आत", destroying the one word triage depends
+on, while gpt-4o-transcribe was exact. The OpenAI Realtime API drives a live
+voice console.
+
+CopilotKit gives the operator an agent-native surface inside the console, with
+shared case context and generative UI rather than a bolted-on chat panel. Exa
+monitors live Indian disaster news so the console knows about a flood before the
+calls arrive. Ambiguous AI handles dispatch workspace tasks. Auth0 guards
+operator routes. Leaflet with OpenStreetMap renders incidents; Nominatim and
+wttr.in add free reverse-geocoding and weather with no API keys.
+
+It is genuinely deployed, not a localhost demo: Dockerised behind a Cloudflare
+named tunnel on self-hosted infrastructure, running as a non-root container with
+a healthcheck, the app bound to loopback so the tunnel is the only ingress, and
+the Telegram webhook re-registering itself on every restart so a reboot cannot
+silently break ingest.
+
+HONEST SCOPE
+
+Cases are held in memory and reset when the container restarts — a deliberate
+scope decision for a hackathon, not a claim of production readiness. Persistence
+is the first thing we would add.
 ```
 
 ---
 
 ## Products & Tools Used
 
-Check ALL of these:
-- [x] AI Tinkerers
-- [x] OpenAI
-- [x] CopilotKit
-- [x] OpenRouter
-- [x] Exa
-- [x] Auth0
-- [x] Ambiguous AI
+Tick these — each is verified working on the live deployment:
 
-Other Products: `Leaflet/OpenStreetMap, React Flow`
+- [x] **AI Tinkerers**
+- [x] **OpenAI** — gpt-4o vision, gpt-4o-mini, gpt-4o-transcribe, Realtime API
+- [x] **CopilotKit** — runtime + React core, operator copilot with shared case context
+- [x] **Exa** — live disaster-news monitoring
+- [x] **Ambiguous AI** — dispatch workspace
+- [x] **Auth0** — operator authentication *(integrated; runs in pass-through demo mode)*
 
----
-
-## Project Description
-
-```markdown
-# Sankatmochan (संकटमोचन) — AI Emergency Response Console for India's 112 Helpline
-
-## The Problem
-
-India's 112 emergency helpline serves 1.4 billion people across 22 official languages and 780+ dialects. When someone calls in crisis — in Marathi, Telugu, Tamil, or Odia — the operator often doesn't speak their language. Manual translation adds 3-5 critical minutes to response times. In emergencies, that gap costs lives.
-
-## The Solution
-
-Sankatmochan ("the one who resolves crisis") is an AI-powered emergency response console where **four AI agents live inside the operator's workflow** — not as chatbots, but as integral parts of the emergency response chain:
-
-### 📞 Voice Agent (OpenAI Realtime API)
-The most impactful integration. Using OpenAI's `gpt-realtime` model via WebRTC, we built a **112 call simulator** that answers emergency calls in the caller's native language. The agent auto-detects Hindi, Marathi, Telugu, Tamil, Bengali, Gujarati, Kannada, Malayalam, Odia, and Punjabi. It triages the emergency in real time — gathering location, assessing severity, identifying injuries — and creates a structured case, all by voice. No human translator needed. A 5-minute call becomes 30 seconds.
-
-**Why context matters:** The voice agent doesn't just transcribe — it understands it's on a 112 emergency line. It asks the right questions ("Where are you? How many people?"), classifies severity (CRITICAL/HIGH/MEDIUM/LOW), and triggers dispatch tools. The emergency context shapes every response.
-
-### 🤖 Copilot Agent (CopilotKit v2)
-An AI assistant embedded in the operator's console sidebar using CopilotKit's full stack:
-- **`useAgentContext`** feeds the selected case (native text, translation, severity, location, timeline, alert) to the AI — it always knows what the operator is looking at
-- **`useFrontendTool`** registers 6 tools: `select_case`, `get_case_summary`, `search_news` (Exa), `escalate_case`, `dispatch_to_agency` (Ambiguous AI)
-- **`useComponent`** renders structured emergency cards and case timelines inline — controlled generative UI
-- **`useHumanInTheLoop`** gates irreversible dispatch actions — the operator must click "Approve Dispatch" before any unit is sent
-- **`CopilotChat`** with contextual suggestion buttons ("Summarise this case", "Search disaster news", "Draft handoff note")
-
-**Why context matters:** The copilot sees the same case the operator sees. It doesn't ask "what case?" — it already knows. Its suggestions change based on severity, language, and case status.
-
-### 📋 Dispatch Agent (Ambiguous AI)
-When the operator confirms an escalation, the system dispatches through Ambiguous AI's workspace:
-- Creates a tracked **Task** with severity, location, language, and full case details
-- Sends an **email notification** to the target agency (NDRF, SDRF, Hospital, Fire, Police)
-- Maintains a complete **audit trail** in the Ambiguous workspace
-- The dispatch agent has its own workspace identity: `sankatmochan.dispatch@sankatmochan-dispatch-workspace.ambi.cc`
-
-**Why context matters:** Dispatch isn't a one-shot API call — it's tracked work. The Ambiguous workspace gives each dispatch a task with status, priority, and ownership. Nothing falls through the cracks.
-
-### 📰 News Agent (Exa)
-Integrated via CopilotKit's `search_news` tool, the operator can ask "What's happening with floods in this region?" and get real-time disaster intelligence from Exa's search API — headlines, sources, and highlights relevant to the active case.
-
-### 🔐 Operator Auth (Auth0)
-The console is protected by Auth0 authentication. Operators sign in via Auth0 Universal Login, and their identity appears in the dashboard header. When Auth0 isn't configured, the console gracefully falls back to demo mode — no broken deploys.
-
-### 🔄 Model Gateway (OpenRouter)
-The CopilotKit runtime supports OpenRouter as a model provider — a single env var change (`MODEL_PROVIDER=openrouter`) routes through OpenRouter's gateway, enabling access to 200+ models from OpenAI, Anthropic, Google, and open-source providers. Zero code change required.
-
-## Technical Stack
-
-- **Frontend:** Next.js 15, React 19, TypeScript, Tailwind CSS
-- **AI Copilot:** CopilotKit v2 (`@copilotkit/react-core@1.70.1`, `@copilotkit/runtime@1.70.3`)
-- **Voice:** OpenAI Realtime API (`gpt-realtime`) via WebRTC with ephemeral tokens
-- **Dispatch:** Ambiguous AI REST API (Tasks + Mail)
-- **Search:** Exa API for disaster news
-- **Auth:** Auth0 (`@auth0/nextjs-auth0@4.29.0`) with middleware
-- **Model Gateway:** OpenRouter (OpenAI-compatible, env-var switchable)
-- **Maps:** Leaflet + OpenStreetMap (CartoDB Dark Matter tiles, no API key)
-- **Fonts:** IBM Plex Mono/Sans + 6 Noto Sans Indic scripts (Devanagari, Telugu, Tamil, Bengali, Gujarati, Odia)
-- **Pipeline Viz:** React Flow for agent orchestration canvas
-
-## Why This Fits "Agents, Everywhere"
-
-The hackathon theme asks agents to live "inside the tools, channels, devices, and environments where people already have work to do." There is no environment where that matters more than an emergency control room. Our four agents don't sit in a separate chat window — they're woven into the 112 operator's console:
-
-- The **voice agent** answers the phone call
-- The **copilot** reads the case on screen
-- The **dispatch agent** tracks the response
-- The **news agent** provides situational awareness
-
-Remove any one of them, and the operator's workflow breaks. That's context-dependent agency.
+**Other Products:**
+```
+Vobiz (voice/telephony API — inbound 112 calls answered and triaged in Hindi),
+Telegram Bot API, SMS Gateway for Android (sms-gate.app), Cloudflare Tunnel,
+Docker, Next.js 16, Leaflet + OpenStreetMap, Nominatim, wttr.in
 ```
 
----
-
-## Team Contributions
-
-### Akshay Shitole (Lead)
-```
-Full-stack architecture and AI agent integration. Built the CopilotKit integration (useAgentContext, useFrontendTool with 6 tools, useComponent for generative UI, useHumanInTheLoop approval gates, CopilotChat with suggestions). Integrated OpenAI Realtime API voice agent with WebRTC client and ephemeral token endpoint. Set up Ambiguous AI dispatch workspace (agent provisioning, task creation, email notifications via REST API). Configured Auth0 operator authentication with middleware and graceful fallback. Added OpenRouter model gateway support. Built the Exa news search integration. Created the Leaflet incident map with severity markers.
-```
-
-### Nishant Bagul (Member)
-```
-Frontend UI development and dashboard design. Built the emergency console layout, case sidebar, case detail view, and translation panel. Implemented the dark theme design system with Tailwind CSS custom tokens. Added Indic language font support (Noto Sans Devanagari, Telugu, Tamil, Bengali, Gujarati, Odia). Worked on the agent pipeline visualization using React Flow.
-```
-
-### Rishikesh Ombase (Member)
-```
-Data modeling and crisis case design. Created the multilingual mock dataset with 9 crisis cases across 9 Indian languages (Telugu, Hindi, Marathi, Tamil, Bengali, Gujarati, Odia, Kannada, Malayalam). Designed the case severity classification system, SLA timers, and timeline event structure. Assisted with testing the CopilotKit tools and voice agent multilingual capabilities.
-```
-
-### Rohit Darekar (Member)
-```
-Testing, demo preparation, and deployment. Tested the end-to-end flow: voice call → case creation → copilot triage → dispatch via Ambiguous AI. Prepared the 2-minute demo video and recording setup. Managed the GitHub repository and documentation. Assisted with the OpenAI Realtime API voice agent testing across multiple Indian languages.
-```
+> **Do not tick** Trigger.dev, OpenRouter, Mozilla.ai or Google Cloud — they are
+> not used in the codebase. Judges can check the repo.
 
 ---
 
@@ -126,6 +112,49 @@ Testing, demo preparation, and deployment. Tested the end-to-end flow: voice cal
 
 ```
 GitHub: https://github.com/akshayy-ai/sankatmochan
+Live demo: https://sankatmochan.rohitdarekar.dpdns.org
+Telegram bot: https://t.me/sankatmochan_112_bot
+```
+
+---
+
+## Team Contributions
+
+> ⚠️ **VERIFY BEFORE SUBMITTING.** I only have direct evidence for Akshay and
+> Rohit. Correct Nishant's and Rishikesh's entries to what they actually did —
+> do not submit a guess.
+
+**Akshay Shitole (Lead)**
+```
+Overall architecture and agent design. Built the multi-channel ingest pipeline
+and the triage agent on OpenAI — gpt-4o-mini for language ID, translation and
+severity classification, gpt-4o vision for emergency photo analysis, and
+gpt-4o-transcribe for speech (benchmarked against whisper-1 on Hindi audio and
+switched after measuring a materially better result). Integrated CopilotKit for
+the in-console operator copilot with shared case context and generative UI.
+Built the Telegram Bot API integration across text, voice and photo, the SMS
+ingest path, and the Vobiz telephony flow for inbound 112 calls. Built the
+operator console UI: live SLA countdowns, Leaflet incident maps, and live
+reverse-geocoding and weather enrichment.
+```
+
+**Rohit Darekar (Member)**
+```
+Deployment and infrastructure. Provided and administered the self-hosted server,
+set up the Cloudflare named tunnel and domain that make the deployment publicly
+reachable from behind NAT, and supported the Dockerised rollout.
+```
+
+**Nishant Bagul (Member)**
+```
+[REPLACE — describe what Nishant actually built, naming specific sponsor tools
+or APIs they worked with.]
+```
+
+**Rishikesh Ombase (Member)**
+```
+[REPLACE — describe what Rishikesh actually built, naming specific sponsor tools
+or APIs they worked with.]
 ```
 
 ---
@@ -133,59 +162,88 @@ GitHub: https://github.com/akshayy-ai/sankatmochan
 ## Prior Work
 
 ```
-The project was built entirely during the hackathon. The Next.js project was scaffolded with create-next-app at the start of the build session. No prior code, designs, or agent implementations existed before the hackathon. All integrations (CopilotKit, OpenAI Realtime, Ambiguous AI, Exa, Auth0, OpenRouter) and the emergency response console UI were built from scratch during the event.
+All code was written during the hackathon. The project was built from a fresh
+Next.js application; no pre-existing codebase, designs or agent logic were
+carried in. Third-party dependencies are standard open-source packages and
+sponsor SDKs installed during the event.
+```
+
+> Edit this if any of it is untrue.
+
+---
+
+## Social Media Post
+
+**X / Twitter**
+
+```
+We built Sankatmochan for #AgentsEverywhere 🚨
+
+India's 112 helpline takes ~200M calls/yr across 22 languages. The operator
+speaks 2 of them.
+
+Five ways in — SMS, Telegram text, voice note, photo, phone call — one triaged
+queue. Any Indian language. ~3 seconds.
+
+SMS matters most: it reaches feature phones with no data. That's who needs 112.
+
+@AITinkerers @OpenAI @CopilotKit @exaailabs @auth0 @ambiguousio
+
+Live: https://sankatmochan.rohitdarekar.dpdns.org
+Bot: https://t.me/sankatmochan_112_bot
+```
+
+**LinkedIn**
+
+```
+🚨 Sankatmochan — built at the AI Tinkerers "Agents, Everywhere" hackathon in Pune.
+
+India's 112 emergency helpline handles around 200 million calls a year across 22
+official languages. The operator answering in Pune speaks Marathi and Hindi. When
+a call comes in Telugu or Bengali, the first ninety seconds go to working out what
+language it is — before anyone finds out someone is drowning.
+
+We built an agent that lives inside the emergency console itself. Five channels
+in, one queue out:
+
+📱 SMS — reaches feature phones with no data, the people most likely to need 112
+💬 Telegram text in any Indian language
+🎤 Voice notes, transcribed and translated
+📸 Photos, where AI vision reads the scene a caller can't describe
+📞 Inbound phone calls, answered and triaged in Hindi
+
+Each arrives in the operator queue in about three seconds with severity, category,
+English translation beside the original script, geocoded location, live weather
+and an SLA countdown.
+
+Nobody clicks anything. That's what makes it an agent rather than a chatbot — it
+decides what deserves a human's attention and arrives with the context already
+assembled.
+
+One finding worth sharing: on identical Hindi audio, whisper-1 transcribed "आग"
+(fire) as "आत" — a non-word. gpt-4o-transcribe got it right. In an emergency
+system, that single word is the difference between a fire truck and nothing.
+
+Built with OpenAI, CopilotKit, Exa, Ambiguous AI, Auth0, Vobiz and the Telegram
+Bot API. Deployed behind a Cloudflare tunnel.
+
+Live: https://sankatmochan.rohitdarekar.dpdns.org
+
+Team Agentic Mindmesh — Akshay Shitole, Nishant Bagul, Rishikesh Ombase, Rohit Darekar
+
+AI Tinkerers, OpenAI, CopilotKit, Exa, Auth0, Ambiguous AI
+
+#AgentsEverywhere
 ```
 
 ---
 
-## Social Media Post (Twitter/X)
+## Submission Checklist
 
-```
-🚨 Built संकटमोचन (Sankatmochan) at @AITinkerers #AgentsEverywhere hackathon — an AI emergency response console for India's 112 helpline.
-
-4 AI agents inside the operator's workflow:
-📞 @OpenAI Realtime Voice — answers 112 calls in 10+ Indian languages
-🤖 @CopilotKit — AI copilot with live case context + generative UI
-📋 @ambiguousio — dispatch tracking + agency notifications
-📰 @exaailabs — real-time disaster intelligence
-
-Plus @openrouter model gateway + @auth0 operator auth.
-
-When someone calls 112 in panic in Telugu or Marathi, every second on translation = a second without help. Sankatmochan eliminates that gap with agents that live WHERE emergencies are managed.
-
-🇮🇳 Hindi · Marathi · Telugu · Tamil · Bengali · Gujarati · Kannada · Malayalam · Odia
-
-Team: Agentic Mindmesh 🏗️ Pune
-
-#AgentsEverywhere #OpenAI #CopilotKit @triggerdotdev @mozillaAI @googlecloud
-```
-
-## Social Media Post (LinkedIn)
-
-```
-🚨 Just built Sankatmochan (संकटमोचन) at the AI Tinkerers "Agents, Everywhere" global hackathon in Pune!
-
-The problem: India's 112 emergency helpline serves 1.4 billion people across 22+ languages. When someone calls in crisis in Marathi, Telugu, or Tamil — manual translation adds 3-5 minutes to response time. In emergencies, that's the difference between life and death.
-
-Our solution: 4 AI agents embedded directly into the emergency operator's workflow:
-
-📞 Voice Agent (OpenAI Realtime API) — Answers 112 calls in the caller's language via WebRTC. Auto-detects Hindi, Marathi, Telugu, Tamil, Bengali + more. Triages, gathers location, creates cases — all by voice.
-
-🤖 Copilot Agent (CopilotKit v2) — AI assistant in the operator's console with full case context. Summarizes cases, searches disaster news, proposes escalations with human-in-the-loop approval gates.
-
-📋 Dispatch Agent (Ambiguous AI) — Creates tracked tasks and sends notifications to NDRF, hospitals, fire brigade via a dedicated workspace.
-
-📰 News Agent (Exa) — Live disaster intelligence relevant to the current case's region.
-
-🔐 Auth (Auth0) — Operator authentication for the emergency console.
-
-🔄 Model Gateway (OpenRouter) — Multi-provider model routing support.
-
-Tech: Next.js 15 · OpenAI Realtime · CopilotKit v2 · Ambiguous AI · Exa · Auth0 · OpenRouter · Leaflet/OSM · 10 Indic language fonts
-
-The theme was "agents in the places people already work" — there's no place where that matters more than an emergency control room.
-
-Team: Agentic Mindmesh — Akshay Shitole, Nishant Bagul, Rishikesh Ombase, Rohit Darekar
-
-#AgentsEverywhere #AITinkerers #OpenAI #CopilotKit #AmbiguousAI #OpenRouter #Exa #Auth0 #EmergencyResponse #AI #Hackathon
-```
+- [ ] Project name
+- [ ] Project description
+- [ ] Products/tools ticked (6 boxes + Other)
+- [ ] Team contributions — **replace the two placeholders first**
+- [ ] Social post published, URL pasted back into the form
+- [ ] Video (optional, ≤2 min — longer deducts points)
+- [ ] Additional links
