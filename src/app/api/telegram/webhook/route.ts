@@ -321,6 +321,24 @@ async function getTelegramFileUrl(fileId: string): Promise<string | null> {
   }
 }
 
+/**
+ * Returned when vision analysis cannot produce a verdict. Deliberately marked
+ * as an emergency: a failed analyser must not decide that a citizen's photo
+ * was uninteresting.
+ */
+const NEEDS_REVIEW = {
+  description: "Image received but automatic analysis was unavailable — needs operator review.",
+  is_emergency: true,
+  severity: "MEDIUM",
+  category: "GENERAL",
+  location: "",
+  peopleCount: "Unknown",
+  injuries: "",
+  hazards: "",
+  language: "Visual",
+  response: "Your photo has been received and flagged for an operator to review.",
+};
+
 /** Analyze an image using GPT-4o vision */
 async function analyzeImage(
   fileId: string,
@@ -424,7 +442,18 @@ LOW only for a genuine non-incident.`,
     });
 
     const data = await res.json();
-    const parsed = JSON.parse(data.choices?.[0]?.message?.content || "{}");
+
+    // An empty completion previously fell through to {} — every field
+    // undefined — which the caller read as "not an emergency" and dropped the
+    // photo silently. Fail OPEN instead: a human still needs to see that
+    // someone sent a photograph to an emergency number.
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      console.error("[vision] empty completion:", JSON.stringify(data).slice(0, 300));
+      return NEEDS_REVIEW;
+    }
+
+    const parsed = JSON.parse(content);
     console.log(
       `[vision] is_emergency=${parsed.is_emergency} ${parsed.severity}/${parsed.category} :: ` +
         `${String(parsed.description || "").slice(0, 100)}`
