@@ -348,14 +348,19 @@ export const CASES: CrisisCase[] = [
 ];
 
 export const PIPELINE_NODES: PipelineNode[] = [
-  { id: "input", label: "Voice Input", sponsor: "Vobiz SIP", iconName: "phone-incoming", status: "done", time: "2.3s" },
-  { id: "stt", label: "Speech → Text", sponsor: "Sarvam AI", iconName: "mic", status: "done", time: "1.1s" },
-  { id: "brain", label: "Classify & Route", sponsor: "OpenAI GPT-4o", iconName: "brain", status: "done", time: "0.8s", detail: "CRITICAL" },
-  { id: "route", label: "Orchestrate", sponsor: "Trigger.dev", iconName: "git-branch", status: "processing", time: "0.1s" },
-  { id: "location", label: "Location Intel", sponsor: "Exa Search", iconName: "map-pin", status: "done", time: "0.5s" },
-  { id: "conference", label: "Conference Call", sponsor: "Vobiz + Sarvam", iconName: "phone-call", status: "processing", detail: "BRIDGE ACTIVE" },
-  { id: "dashboard", label: "Live Dashboard", sponsor: "CopilotKit", iconName: "layout-dashboard", status: "done" },
-  { id: "translate", label: "Translation", sponsor: "OpenAI", iconName: "languages", status: "processing", detail: "te ↔ mr" },
+  // Row 1 — ingest and understanding. Every sponsor named here is actually
+  // called at runtime; the earlier list credited Sarvam AI and Trigger.dev,
+  // neither of which this system uses.
+  { id: "ingest", label: "Multi-Channel Ingest", sponsor: "Telegram · SMS · Vobiz", iconName: "phone-incoming", status: "done", time: "0.1s", detail: "5 CHANNELS" },
+  { id: "stt", label: "Speech → Text", sponsor: "OpenAI gpt-4o-transcribe", iconName: "mic", status: "done", time: "1.8s" },
+  { id: "vision", label: "Scene Analysis", sponsor: "OpenAI gpt-4o vision", iconName: "brain", status: "done", time: "2.4s" },
+  { id: "translate", label: "Detect & Translate", sponsor: "OpenAI gpt-4o-mini", iconName: "languages", status: "done", time: "0.6s", detail: "15 LANGS" },
+
+  // Row 2 — triage, enrichment and the operator surface.
+  { id: "triage", label: "Triage & Severity", sponsor: "OpenAI gpt-4o-mini", iconName: "git-branch", status: "processing", time: "0.5s", detail: "SLA SET" },
+  { id: "geo", label: "Location & Weather", sponsor: "Nominatim · wttr.in", iconName: "map-pin", status: "done", time: "0.5s" },
+  { id: "news", label: "Disaster News Watch", sponsor: "Exa", iconName: "phone-call", status: "done", time: "1.2s" },
+  { id: "console", label: "Operator Console", sponsor: "CopilotKit · Ambiguous AI", iconName: "layout-dashboard", status: "processing", detail: "LIVE" },
 ];
 
 export const SPONSORS = [
