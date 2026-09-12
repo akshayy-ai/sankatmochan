@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   addCase,
+  addAttention,
+  appendTurn,
   listCases,
   nextCaseId,
   analyzeEmergency,
+  openIncidentFor,
+  raiseSeverity,
+  reviseCase,
   setLastLocation,
   getLastLocation,
   backfillLocation,
+  touchCase,
   type LiveCase,
 } from "@/lib/caseStore";
 
@@ -66,253 +72,309 @@ type TelegramMessage = {
   photo?: { file_id: string }[];
   voice?: { file_id: string };
   audio?: { file_id: string };
+  // Media the old handler ignored entirely. A ten-second video of a burning
+  // building used to get complete silence, because the handler returned early
+  // on anything without `text`.
+  video?: { file_id: string };
+  video_note?: { file_id: string };
+  document?: { file_id: string; file_name?: string; mime_type?: string };
+  sticker?: { file_id: string };
+  contact?: { phone_number?: string };
 };
 
-/** Runs after the webhook has already been acknowledged. */
+type MsgKind = "TEXT" | "VOICE" | "PHOTO" | "LOCATION" | "OTHER";
+
+function classifyKind(m: TelegramMessage): MsgKind {
+  if (m.location) return "LOCATION";
+  if (m.photo?.length) return "PHOTO";
+  if (m.voice || m.audio) return "VOICE";
+  if (m.text) return "TEXT";
+  return "OTHER";
+}
+
+/**
+ * The caller's own words, never a placeholder.
+ *
+ * A photo caption is where "second floor, my mother is inside" usually lives;
+ * recording the turn as "[photo]" throws that away.
+ */
+function rawTextOf(m: TelegramMessage): string {
+  if (m.text) return m.text;
+  if (m.caption) return m.caption;
+  if (m.location) return `[location pin] ${m.location.latitude.toFixed(5)},${m.location.longitude.toFixed(5)}`;
+  if (m.photo?.length) return "[photo, no caption]";
+  if (m.voice || m.audio) return "[voice note]";
+  if (m.video_note) return "[video note]";
+  if (m.video) return "[video]";
+  if (m.document) return `[file: ${m.document.file_name || m.document.mime_type || "document"}]`;
+  if (m.sticker) return "[sticker]";
+  if (m.contact) return `[contact: ${m.contact.phone_number || "shared"}]`;
+  return "[unsupported message]";
+}
+
+function mediaIdOf(m: TelegramMessage): string | undefined {
+  return (
+    m.voice?.file_id || m.audio?.file_id ||
+    m.photo?.[m.photo.length - 1]?.file_id ||
+    m.video?.file_id || m.video_note?.file_id ||
+    m.document?.file_id || m.sticker?.file_id
+  );
+}
+
+/**
+ * Runs after the webhook has already been acknowledged.
+ *
+ * Ordering is the whole design: the turn is WRITTEN before any download,
+ * model call or reply. Every failure after that point leaves the caller's
+ * words on a case an operator can see. The previous version did the slow work
+ * first, so a failed transcription or an OpenAI outage meant the message
+ * existed nowhere at all.
+ */
 async function processMessage(message: TelegramMessage) {
+  const chatId = message.chat.id;
+  const senderName =
+    [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ") ||
+    "Unknown";
+
   try {
-    const chatId = message.chat.id;
-    const senderName =
-      [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ") ||
-      "Unknown";
-
-    // Handle /start command
-    if (message.text === "/start") {
-      await sendTelegram(chatId,
-        "🚨 *Sankatmochan 112 Emergency Response*\n\n" +
-        "Report emergencies in *any Indian language*:\n\n" +
-        "📝 Type your emergency\n" +
-        "🎤 Send a voice note\n" +
-        "📸 Send a photo of the situation\n\n" +
-        "आपातकालीन संदेश हिंदी में भेजें\n" +
-        "మీ అత్యవసర సందేశాన్ని తెలుగులో పంపండి\n" +
-        "तुमचा आणीबाणीचा संदेश मराठीत पाठवा\n\n" +
-        "📍 Share your location for faster response.\n" +
-        "📞 For phone emergencies, call 112."
-      );
+    // Commands are the only messages that never become turns.
+    if (message.text === "/start" || message.text === "/help") {
+      await sendTelegram(chatId, message.text === "/start" ? START_TEXT : HELP_TEXT);
       return;
     }
 
-    // Handle /help command
-    if (message.text === "/help") {
-      await sendTelegram(chatId,
-        "📋 *How to report an emergency:*\n\n" +
-        "1. 📝 Type, 🎤 voice note, or 📸 photo\n" +
-        "2. 📍 Share your location (📎 → Location)\n" +
-        "3. AI will transcribe, translate, classify and dispatch\n\n" +
-        "📸 *Photos*: Send pictures of fires, floods, accidents, injuries — AI vision analyzes the scene\n\n" +
-        "Supported: Hindi, Marathi, Telugu, Tamil, Bengali, Gujarati, Kannada, Malayalam, Odia, Punjabi, English"
-      );
-      return;
-    }
+    const kind = classifyKind(message);
+    const raw = rawTextOf(message);
+    const open = openIncidentFor(chatId);
 
-    // Handle location sharing
-    if (message.location) {
+    // ── Location pins attach to the open incident, never open a new case ──
+    if (kind === "LOCATION" && message.location) {
       const { latitude, longitude } = message.location;
       setLastLocation(chatId, latitude, longitude);
-
-      // Callers often report first and share the pin afterwards, so attach it
-      // to a case already raised from this chat rather than only the next one.
       const coords = `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
       const updated = backfillLocation(chatId, coords);
-
+      if (updated) {
+        appendTurn(updated, { kind: "LOCATION", text: raw });
+        touchCase(updated);
+      }
       await sendTelegram(chatId,
         `📍 Location received: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\n\n` +
         (updated
-          ? `Pinned to case *${updated}* — responders can now see exactly where you are.`
+          ? `Pinned to case *${updated}* — responders can see exactly where you are.`
           : "Now describe your emergency — type, voice note 🎤, or photo 📸")
       );
       return;
     }
 
-    // ── Handle photo messages ─────────────────────────────────
-    if (message.photo && message.photo.length > 0) {
-      // Telegram sends multiple sizes — pick the largest
-      const photo = message.photo[message.photo.length - 1];
-      const fileId = photo.file_id;
+    // ── STEP 1: WRITE. Nothing slow happens before this. ──────────────────
+    let caseId: string;
+    let isNew = false;
 
-      await sendTelegram(chatId, "📸 _Analyzing emergency image..._");
-
-      const imageAnalysis = await analyzeImage(fileId, message.caption);
-      if (!imageAnalysis) {
-        await sendTelegram(chatId, "❌ Could not analyze image. Please describe your emergency in text.");
-        return;
-      }
-
-      if (!imageAnalysis.is_emergency) {
-        await sendTelegram(chatId,
-          `📸 _I see:_ _${imageAnalysis.description}_\n\n` +
-          "🙏 This does not look like an emergency, so no case was raised.\n\n" +
-          "If it is one, send a photo of the situation or describe it in words.\n\n" +
-          "📞 For immediate help, call *112*"
-        );
-        return;
-      }
-
-      const caseId = nextCaseId("TG");
-
-      const newCase: TelegramCase = {
+    if (open) {
+      caseId = open.id;
+      appendTurn(caseId, { kind: kind === "OTHER" ? "SYSTEM" : kind, text: raw });
+      touchCase(caseId);
+    } else {
+      isNew = true;
+      caseId = nextCaseId("TG");
+      addCase({
         id: caseId,
         chatId,
         senderName,
-        message: message.caption || "[Photo]",
-        language: imageAnalysis.language,
-        englishTranslation: imageAnalysis.description,
-        severity: imageAnalysis.severity,
-        category: imageAnalysis.category,
+        message: raw,
+        language: "Unknown",
+        englishTranslation: "",
+        // Provisional until enrichment lands. Never NONE — an unanalysed
+        // report must still be visible to an operator.
+        severity: "MEDIUM",
+        category: "GENERAL",
         timestamp: new Date().toISOString(),
-        location: getLastLocation(chatId) || imageAnalysis.location || "Location not shared",
-        channel: "PHOTO",
-        imageAnalysis: imageAnalysis.description,
-      };
-      addCase(newCase);
-
-      const sevEmoji =
-        imageAnalysis.severity === "CRITICAL" ? "🔴" :
-        imageAnalysis.severity === "HIGH" ? "🟠" :
-        imageAnalysis.severity === "MEDIUM" ? "🔵" : "⚪";
-
-      await sendTelegram(chatId,
-        `${sevEmoji} *Case ${caseId} Created* (📸 Photo)\n\n` +
-        `🔍 AI Analysis:\n_${imageAnalysis.description}_\n\n` +
-        `📋 ${imageAnalysis.category} · ⚠️ ${imageAnalysis.severity}\n` +
-        `👥 People visible: ${imageAnalysis.peopleCount}\n` +
-        `${imageAnalysis.injuries ? `🩹 Injuries: _${imageAnalysis.injuries}_\n` : ""}` +
-        `${imageAnalysis.hazards ? `⚠️ Hazards: _${imageAnalysis.hazards}_\n` : ""}` +
-        `\n${imageAnalysis.response}` +
-        `\n\n📍 Share your location for faster response.`
-      );
-
-      return;
+        location: getLastLocation(chatId) || "Location not shared",
+        channel: kind === "OTHER" ? "TEXT" : (kind as LiveCase["channel"]),
+        turns: [],
+        slots: {},
+        attention: [],
+      });
+      appendTurn(caseId, { kind: kind === "OTHER" ? "SYSTEM" : kind, text: raw });
     }
 
-    // ── Handle voice messages ──────────────────────────────────
-    if (message.voice || message.audio) {
+    // ── STEP 2: RECEIPT, before the slow work ─────────────────────────────
+    if (kind === "VOICE") await sendTelegram(chatId, "🎤 _Transcribing your voice message..._");
+    else if (kind === "PHOTO") await sendTelegram(chatId, "📸 _Analyzing the image..._");
+
+    // ── STEP 3: ENRICH IN PLACE. Failures leave the turn written. ─────────
+    let enriched = raw;
+
+    if (kind === "VOICE") {
       const fileId = message.voice?.file_id || message.audio?.file_id;
-      if (!fileId) {
-        await sendTelegram(chatId, "❌ Could not process audio. Please try again or type your emergency.");
-        return;
-      }
-
-      await sendTelegram(chatId, "🎤 _Transcribing your voice message..._");
-
-      const transcript = await transcribeVoice(fileId);
-      if (!transcript) {
-        await sendTelegram(chatId, "❌ Could not transcribe audio. Please type your emergency instead.");
-        return;
-      }
-
-      const analysis = await analyzeEmergency(transcript);
-
-      // Same gate the text path applies. Without it a casual voice note — or a
-      // transcript the model could make no sense of — files a junk case, which
-      // is how a NONE/GENERAL entry reached the operator queue.
-      if (!analysis.is_emergency) {
+      const transcript = fileId ? await transcribeVoice(fileId) : null;
+      if (transcript) {
+        enriched = transcript;
+        reviseCase(caseId, { audioTranscript: transcript, message: transcript });
+        appendTurn(caseId, { kind: "SYSTEM", text: `Transcript: ${transcript}` });
+      } else {
+        // The audio still exists on Telegram's servers; the file_id makes it
+        // recoverable, so an operator can listen even though ASR failed.
+        addAttention(caseId, "NEEDS_REVIEW");
+        appendTurn(caseId, {
+          kind: "SYSTEM",
+          text: `Transcription failed — audio file_id ${mediaIdOf(message) || "unknown"}`,
+        });
         await sendTelegram(chatId,
-          `🎤 _Heard:_ _${transcript}_\n\n` +
-          "🙏 This is the *Sankatmochan 112 Emergency Helpline*.\n\n" +
-          "If this is an emergency, describe it — type, voice note 🎤, or photo 📸.\n" +
-          "If the transcription above is wrong, please try again or type instead.\n\n" +
-          "📞 For immediate help, call *112*"
+          `✅ Your voice message is filed as *${caseId}*.\n\n` +
+          "We could not transcribe it — an operator will listen to it.\n" +
+          "If you can, please also type what is happening."
         );
         return;
       }
-
-      const caseId = nextCaseId("TG");
-
-      const newCase: TelegramCase = {
-        id: caseId,
-        chatId,
-        senderName,
-        message: transcript,
-        language: analysis.language,
-        englishTranslation: analysis.translation,
-        severity: analysis.severity,
-        category: analysis.category,
-        timestamp: new Date().toISOString(),
-        location: getLastLocation(chatId) || analysis.location || "Location not shared",
-        channel: "VOICE",
-        audioTranscript: transcript,
-      };
-      addCase(newCase);
-
-      const sevEmoji =
-        analysis.severity === "CRITICAL" ? "🔴" :
-        analysis.severity === "HIGH" ? "🟠" :
-        analysis.severity === "MEDIUM" ? "🔵" : "⚪";
-
-      await sendTelegram(chatId,
-        `${sevEmoji} *Case ${caseId} Created* (🎤 Voice)\n\n` +
-        `🎤 Transcript:\n_${transcript}_\n\n` +
-        `🔄 Translation:\n_${analysis.translation}_\n\n` +
-        `📋 ${analysis.category} · ⚠️ ${analysis.severity} · 🗣️ ${analysis.language}\n\n` +
-        (analysis.response || "Your emergency has been registered.") +
-        `\n\n📍 Share your location for faster response.`
-      );
-
-      return;
     }
 
-    // ── Handle text messages ──────────────────────────────────
-    if (!message.text) {
-      return;
+    if (kind === "PHOTO") {
+      const fileId = message.photo?.[message.photo.length - 1]?.file_id;
+      const analysis = fileId ? await analyzeImage(fileId, message.caption) : null;
+      if (analysis) {
+        enriched = message.caption
+          ? `${message.caption} — ${analysis.description}`
+          : analysis.description;
+        reviseCase(caseId, {
+          imageAnalysis: analysis.description,
+          englishTranslation: analysis.description,
+          category: analysis.category,
+        });
+        raiseSeverity(caseId, analysis.severity);
+        appendTurn(caseId, { kind: "SYSTEM", text: `Vision: ${analysis.description}` });
+      } else {
+        addAttention(caseId, "NEEDS_REVIEW");
+        appendTurn(caseId, { kind: "SYSTEM", text: "Image analysis unavailable" });
+        await sendTelegram(chatId,
+          `✅ Your photo is filed as *${caseId}*.\n\n` +
+          "Automatic analysis was unavailable — an operator will look at it.\n" +
+          "If you can, please describe what is happening."
+        );
+        return;
+      }
     }
 
-    const text = message.text;
-    const analysis = await analyzeEmergency(text);
-
-    // ── Normal conversation — no case created ──
-    if (!analysis.is_emergency) {
+    if (kind === "OTHER") {
+      // Video, video note, document, sticker — previously answered with total
+      // silence. It is filed and acknowledged; an operator opens the media.
+      addAttention(caseId, "NEEDS_REVIEW");
       await sendTelegram(chatId,
-        analysis.response ||
-        "🙏 This is the *Sankatmochan 112 Emergency Helpline*.\n\n" +
-        "To report an emergency:\n" +
-        "📝 Type your emergency\n" +
-        "🎤 Send a voice note\n" +
-        "📸 Send a photo\n" +
-        "📍 Share your location\n\n" +
-        "📞 For immediate help, call *112*"
+        `✅ Received and filed as *${caseId}*.\n\n` +
+        "We cannot read this attachment automatically, so an operator will review it.\n" +
+        "Please also describe your emergency in words, a voice note 🎤, or a photo 📸."
       );
       return;
     }
 
-    // ── Emergency — create case ──
-    const caseId = nextCaseId("TG");
+    // Follow-up turns are triaged WITH the incident so far. This is the whole
+    // point of keeping conversation state: a fragment answering a question is
+    // meaningless alone and unambiguous in context.
+    const prior = open
+      ? (open.turns || [])
+          .filter((t) => t.kind !== "SYSTEM")
+          .slice(0, -1)
+          .map((t) => `- ${t.text}`)
+          .join("\n")
+      : "";
+    const analysis = await analyzeEmergency(enriched, prior ? { context: prior } : {});
 
-    const newCase: TelegramCase = {
-      id: caseId,
-      chatId,
-      senderName,
-      message: text,
+    reviseCase(caseId, {
       language: analysis.language,
       englishTranslation: analysis.translation,
-      severity: analysis.severity,
       category: analysis.category,
-      timestamp: new Date().toISOString(),
-      location: getLastLocation(chatId) || analysis.location || "Location not shared",
-      channel: "TEXT",
-    };
-    addCase(newCase);
+      location: analysis.location,
+    });
+    raiseSeverity(caseId, analysis.severity);
 
+    // ── First contact is never dropped ────────────────────────────────────
+    // "मदद", "can you call me back later", a photo the model reads as a
+    // selfie — the messages a classifier is most likely to dismiss are the
+    // ones a frightened or coerced caller sends. Filing a LOW case costs an
+    // operator one glance and one click.
+    if (!analysis.is_emergency) {
+      if (isNew) {
+        reviseCase(caseId, { severity: "LOW" });
+        addAttention(caseId, "NEEDS_REVIEW");
+      }
+      await sendTelegram(chatId,
+        (analysis.response || HELPLINE_BLURB) + `\n\n_Ref: ${caseId}_`
+      );
+      return;
+    }
+
+    // The caller saying they are fine is advisory. The case stays OPEN and
+    // visible; only an operator resolves it.
+    if (/^\/(close|done)$/i.test(message.text || "")) {
+      reviseCase(caseId, { callerSaysResolved: true });
+      appendTurn(caseId, { kind: "SYSTEM", text: "Caller indicated the situation is resolved" });
+      await sendTelegram(chatId,
+        `Noted. *${caseId}* stays with an operator until they confirm it.\n\n` +
+        "If anything changes, just message again."
+      );
+      return;
+    }
+
+    const c = listCases().find((x) => x.id === caseId);
     const sevEmoji =
-      analysis.severity === "CRITICAL" ? "🔴" :
-      analysis.severity === "HIGH" ? "🟠" :
-      analysis.severity === "MEDIUM" ? "🔵" : "⚪";
+      c?.severity === "CRITICAL" ? "🔴" :
+      c?.severity === "HIGH" ? "🟠" :
+      c?.severity === "MEDIUM" ? "🔵" : "⚪";
 
-    await sendTelegram(chatId,
-      `${sevEmoji} *Case ${caseId} Created*\n\n` +
-      `📋 Category: ${analysis.category}\n` +
-      `⚠️ Severity: ${analysis.severity}\n` +
-      `🗣️ Language: ${analysis.language}\n\n` +
-      `🔄 Translation:\n_${analysis.translation}_\n\n` +
-      (analysis.response || "Your emergency has been registered. Help is being dispatched.") +
-      `\n\n📍 Share your location for faster response.`
-    );
-
+    if (isNew) {
+      await sendTelegram(chatId,
+        `${sevEmoji} *Case ${caseId} created*\n\n` +
+        `📋 ${c?.category} · ⚠️ ${c?.severity} · 🗣️ ${c?.language}\n\n` +
+        `🔄 _${analysis.translation}_\n\n` +
+        (analysis.response || "Your report has been registered.") +
+        `\n\n📍 Share your location so responders can find you.`
+      );
+    } else {
+      // Follow-ups get one short line, not the whole card again. Re-sending a
+      // formatted case block every twenty seconds to someone watching a fire
+      // is noise.
+      await sendTelegram(chatId,
+        `${sevEmoji} Added to *${caseId}*. ${
+          c?.location === "Location not shared"
+            ? "If you can, share your location 📍"
+            : "An operator can see this."
+        }`
+      );
+    }
   } catch (err) {
     console.error("Telegram webhook error:", err);
+    // Even here the caller hears something — silence reads as "nobody got it".
+    await sendTelegram(chatId,
+      "✅ Your message was received. Something went wrong on our side while " +
+      "processing it, and an operator has been alerted."
+    ).catch(() => {});
   }
 }
+
+const START_TEXT =
+  "🚨 *Sankatmochan 112 Emergency Response*\n\n" +
+  "Report emergencies in *any language*:\n\n" +
+  "📝 Type your emergency\n" +
+  "🎤 Send a voice note\n" +
+  "📸 Send a photo of the situation\n" +
+  "📍 Share your location\n\n" +
+  "आपातकालीन संदेश हिंदी में भेजें\n" +
+  "మీ అత్యవసర సందేశాన్ని తెలుగులో పంపండి\n" +
+  "तुमचा आणीबाणीचा संदेश मराठीत पाठवा\n\n" +
+  "📞 For immediate help, call 112.";
+
+const HELP_TEXT =
+  "📋 *How to report an emergency:*\n\n" +
+  "1. 📝 Type, 🎤 voice note, or 📸 photo\n" +
+  "2. 📍 Share your location (📎 → Location)\n" +
+  "3. Keep messaging — follow-up details are added to the same case\n\n" +
+  "Your case number appears on every reply.\n\n" +
+  "📞 For immediate help, call 112.";
+
+const HELPLINE_BLURB =
+  "🙏 This is the *Sankatmochan 112 Emergency Helpline*.\n\n" +
+  "If you are in danger, describe what is happening — type, voice note 🎤, or photo 📸.\n\n" +
+  "📞 For immediate help, call *112*";
 
 // ═══════════════════════════════════════════════════════════════
 // Helper functions
