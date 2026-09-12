@@ -20,10 +20,13 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: sankatmochan-tunnel
     restart: unless-stopped
-    # Quick tunnel: no Cloudflare account or domain needed. The trade-off is a
-    # fresh *.trycloudflare.com hostname on every start, so the metrics server
-    # is exposed for the registrar below to discover the current one.
-    command: tunnel --no-autoupdate --metrics 0.0.0.0:20241 --url http://app:3000
+    # Named tunnel. A quick tunnel will NOT work here: Telegram refuses
+    # *.trycloudflare.com webhook targets ("Failed to resolve host"), so the
+    # deployment needs a real hostname on a domain you control.
+    # Route it in the Cloudflare dashboard: Public Hostname → http://app:3000
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    env_file:
+      - .env.tunnel
     depends_on:
       - app
     networks:
@@ -32,30 +35,21 @@ services:
   registrar:
     image: curlimages/curl:latest
     container_name: sankatmochan-registrar
-    restart: on-failure:5
+    restart: on-failure:3
     depends_on:
       - tunnel
-    # Because the quick-tunnel hostname changes on every restart, re-point the
-    # Telegram webhook at the current one each time the stack comes up.
-    # Without this a reboot leaves the bot registered to a dead URL.
+    env_file:
+      - .env.tunnel
+    # Re-points the Telegram webhook at PUBLIC_URL on every start, so a
+    # redeploy or reboot never leaves the bot registered to a stale target.
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         set -eu
-        echo "waiting for tunnel to publish a hostname..."
-        host=""
-        for i in $$(seq 1 60); do
-          host=$$(curl -fsS http://tunnel:20241/quicktunnel 2>/dev/null \
-                  | sed -n 's/.*"hostname":"\([^"]*\)".*/\1/p') || true
-          [ -n "$$host" ] && break
-          sleep 3
-        done
-        if [ -z "$$host" ]; then
-          echo "ERROR: tunnel hostname never appeared" >&2
-          exit 1
+        if [ -z "$${PUBLIC_URL:-}" ]; then
+          echo "PUBLIC_URL not set in .env.tunnel — skipping webhook registration"
+          exit 0
         fi
-        url="https://$$host"
-        echo "PUBLIC URL: $$url"
 
         echo "waiting for app..."
         for i in $$(seq 1 60); do
@@ -63,12 +57,19 @@ services:
           sleep 3
         done
 
+        echo "waiting for tunnel to route $${PUBLIC_URL}..."
+        for i in $$(seq 1 60); do
+          curl -fsS -o /dev/null --max-time 10 "$${PUBLIC_URL}/" && break
+          sleep 5
+        done
+
         echo "registering telegram webhook..."
-        curl -fsS "http://app:3000/api/telegram/setup?url=$$url" || true
+        curl -fsS --max-time 30 "http://app:3000/api/telegram/setup?url=$${PUBLIC_URL}" || \
+          echo "WARNING: webhook registration failed"
         echo
         echo "=================================================="
-        echo " SANKATMOCHAN IS LIVE AT: $$url"
-        echo " Vobiz Answer URL:        $$url/api/vobiz/answer"
+        echo " SANKATMOCHAN LIVE:   $${PUBLIC_URL}"
+        echo " Vobiz Answer URL:    $${PUBLIC_URL}/api/vobiz/answer"
         echo "=================================================="
     networks:
       - sankatnet
