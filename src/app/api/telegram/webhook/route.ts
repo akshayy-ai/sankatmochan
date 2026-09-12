@@ -4,6 +4,9 @@ import {
   listCases,
   nextCaseId,
   analyzeEmergency,
+  setLastLocation,
+  getLastLocation,
+  backfillLocation,
   type LiveCase,
 } from "@/lib/caseStore";
 
@@ -106,9 +109,18 @@ async function processMessage(message: TelegramMessage) {
     // Handle location sharing
     if (message.location) {
       const { latitude, longitude } = message.location;
+      setLastLocation(chatId, latitude, longitude);
+
+      // Callers often report first and share the pin afterwards, so attach it
+      // to a case already raised from this chat rather than only the next one.
+      const coords = `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
+      const updated = backfillLocation(chatId, coords);
+
       await sendTelegram(chatId,
         `📍 Location received: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\n\n` +
-        "Now describe your emergency — type, voice note 🎤, or photo 📸"
+        (updated
+          ? `Pinned to case *${updated}* — responders can now see exactly where you are.`
+          : "Now describe your emergency — type, voice note 🎤, or photo 📸")
       );
       return;
     }
@@ -149,7 +161,7 @@ async function processMessage(message: TelegramMessage) {
         severity: imageAnalysis.severity,
         category: imageAnalysis.category,
         timestamp: new Date().toISOString(),
-        location: imageAnalysis.location || "Location not shared",
+        location: getLastLocation(chatId) || imageAnalysis.location || "Location not shared",
         channel: "PHOTO",
         imageAnalysis: imageAnalysis.description,
       };
@@ -218,7 +230,7 @@ async function processMessage(message: TelegramMessage) {
         severity: analysis.severity,
         category: analysis.category,
         timestamp: new Date().toISOString(),
-        location: analysis.location || "Location not shared",
+        location: getLastLocation(chatId) || analysis.location || "Location not shared",
         channel: "VOICE",
         audioTranscript: transcript,
       };
@@ -277,7 +289,7 @@ async function processMessage(message: TelegramMessage) {
       severity: analysis.severity,
       category: analysis.category,
       timestamp: new Date().toISOString(),
-      location: analysis.location || "Location not shared",
+      location: getLastLocation(chatId) || analysis.location || "Location not shared",
       channel: "TEXT",
     };
     addCase(newCase);

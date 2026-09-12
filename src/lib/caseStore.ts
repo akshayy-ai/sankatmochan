@@ -50,6 +50,49 @@ export function nextCaseId(prefix: string): string {
   return `${prefix}-${String(Date.now()).slice(-6)}`;
 }
 
+/**
+ * Last shared position per chat.
+ *
+ * Callers typically share a pin either just before or just after describing
+ * the emergency, so a pin is remembered for a window and applied to whichever
+ * case it brackets. Pins older than that are dropped — a stale position is
+ * worse than none, because it sends responders somewhere confidently wrong.
+ */
+const PIN_TTL_MS = 30 * 60 * 1000;
+
+const lastLocation = new Map<number, { coords: string; at: number }>();
+
+export function setLastLocation(chatId: number, lat: number, lng: number) {
+  lastLocation.set(chatId, {
+    coords: `${lat.toFixed(5)},${lng.toFixed(5)}`,
+    at: Date.now(),
+  });
+}
+
+export function getLastLocation(chatId: number): string | null {
+  const hit = lastLocation.get(chatId);
+  if (!hit) return null;
+  if (Date.now() - hit.at > PIN_TTL_MS) {
+    lastLocation.delete(chatId);
+    return null;
+  }
+  return hit.coords;
+}
+
+/**
+ * Attach a pin to the most recent case from this chat that has no real
+ * coordinates yet, for the common order of "report first, share pin second".
+ * Returns the case id it updated, if any.
+ */
+export function backfillLocation(chatId: number, coords: string): string | null {
+  const target = cases.find(
+    (c) => c.chatId === chatId && !/-?\d+\.\d+\s*,\s*-?\d+\.\d+/.test(c.location)
+  );
+  if (!target) return null;
+  target.location = coords;
+  return target.id;
+}
+
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 
 export type Analysis = {
