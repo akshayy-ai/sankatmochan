@@ -174,9 +174,10 @@ export default function VoiceCallPanel() {
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
             <div className="text-[32px]">🎙️</div>
             <div className="text-[11px] text-text-dim leading-relaxed max-w-[260px]">
-              Simulate a 112 emergency call. Speak in{" "}
-              <span style={{ color: "#C3CCD8" }}>any language</span> — the agent
-              detects it and triages in real time. Nothing to select.
+              Simulate a call to India&apos;s{" "}
+              <span style={{ color: "#C3CCD8" }}>112</span> emergency line.
+              Speak in <span style={{ color: "#C3CCD8" }}>any language</span> —
+              the agent detects it and triages in real time. Nothing to select.
             </div>
             <div className="text-[9.5px] leading-relaxed max-w-[260px]" style={{ color: "#5A6575" }}>
               हिन्दी · मराठी · తెలుగు · தமிழ் · বাংলা · ગુજરાતી · ಕನ್ನಡ ·
@@ -188,7 +189,7 @@ export default function VoiceCallPanel() {
             {/* Visitors and migrant workers dial the same number as residents,
                 and are the least likely to share a language with the operator. */}
             <div className="text-[9px]" style={{ color: "#4E5A6B" }}>
-              15 verified live · emergencies don&apos;t check your passport
+              22 official languages · 15 verified live · emergencies don&apos;t check your passport
             </div>
           </div>
         )}

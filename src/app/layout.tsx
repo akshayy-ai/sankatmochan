@@ -4,7 +4,7 @@ import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SANKATMOCHAN — 112 Multilingual Response Grid",
+  title: "SANKATMOCHAN · संकटमोचन — India 112 Multilingual Response Grid",
   description:
     "Multilingual emergency response platform. Any language, over SMS, Telegram, photo and phone call — built for India's 22 official languages and the visitors who speak none of them.",
 };

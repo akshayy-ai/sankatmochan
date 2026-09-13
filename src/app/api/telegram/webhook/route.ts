@@ -352,7 +352,7 @@ async function processMessage(message: TelegramMessage) {
 }
 
 const START_TEXT =
-  "🚨 *Sankatmochan 112 Emergency Response*\n\n" +
+  "🚨 *Sankatmochan · संकटमोचन*\n_India 112 Emergency Response_\n\n" +
   "Report emergencies in *any language*:\n\n" +
   "📝 Type your emergency\n" +
   "🎤 Send a voice note\n" +

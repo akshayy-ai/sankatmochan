@@ -39,16 +39,31 @@ export default function Header({ view, onViewChange }: Props) {
   return (
     <header className="h-[52px] min-h-[52px] bg-surface border-b border-border flex items-stretch font-mono">
       {/* Logo */}
-      <div className="flex items-center gap-[11px] px-4 border-r border-border min-w-[250px]">
-        <div className="w-6 h-6 rounded bg-teal flex items-center justify-center">
-          <span className="text-[12px] font-semibold" style={{ color: "#07110F" }}>सं</span>
+      <div className="flex items-center gap-[11px] px-4 border-r border-border min-w-[272px]">
+        {/* Tricolour rail — the mark reads as Indian civic infrastructure
+            before a single word is read. Kept to a 3px edge so it never
+            competes with the severity colours the operator is scanning for. */}
+        <div className="flex items-center gap-[9px]">
+          <div className="flex flex-col w-[3px] h-6 rounded-sm overflow-hidden">
+            <span className="flex-1" style={{ background: "#FF9933" }} />
+            <span className="flex-1" style={{ background: "#F2F2F2" }} />
+            <span className="flex-1" style={{ background: "#138808" }} />
+          </div>
+          <div className="w-6 h-6 rounded bg-teal flex items-center justify-center">
+            <span className="text-[12px] font-semibold" style={{ color: "#07110F" }}>सं</span>
+          </div>
         </div>
         <div className="flex flex-col gap-0.5">
-          <div className="text-[12px] font-semibold text-text-primary tracking-[.14em] leading-none font-sans">
-            SANKATMOCHAN
+          <div className="flex items-baseline gap-[6px]">
+            <span className="text-[12px] font-semibold text-text-primary tracking-[.14em] leading-none font-sans">
+              SANKATMOCHAN
+            </span>
+            <span className="text-[8.5px] leading-none" style={{ color: "#6E7A8C" }}>
+              संकटमोचन
+            </span>
           </div>
           <div className="text-[8.5px] text-text-dim tracking-[.14em] leading-none">
-            112 ERC · PUNE · SHIFT B
+            भारत · 112 ERC · PUNE · SHIFT B
           </div>
         </div>
       </div>
