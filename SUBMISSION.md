@@ -174,8 +174,6 @@ carried in. Third-party dependencies are standard open-source packages and
 sponsor SDKs installed during the event.
 ```
 
-> Edit this if any of it is untrue.
-
 ---
 
 ## Social Media Post
