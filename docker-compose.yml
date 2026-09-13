@@ -10,6 +10,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
+      CASE_DB_PATH: /data/sankatmochan.db
+    # Cases must outlive the container. Without this every redeploy wipes the
+    # queue, and a restart mid-incident loses the caller.
+    volumes:
+      - sankat-data:/data
     # Published on loopback only — the tunnel is the sole public path in.
     ports:
       - "127.0.0.1:3000:3000"
@@ -82,3 +87,6 @@ services:
 networks:
   sankatnet:
     driver: bridge
+
+volumes:
+  sankat-data:

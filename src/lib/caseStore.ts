@@ -1,5 +1,7 @@
+import { saveCase, loadCases } from "./persistence";
+
 /**
- * Shared in-memory case store.
+ * Shared case store.
  *
  * Every ingest channel (Telegram text/voice/photo, Vobiz phone calls) writes
  * here, and the operator console polls it, so a case raised from any channel
@@ -58,7 +60,37 @@ export type CaseTurn = {
 const MAX_CASES = 50;
 const MAX_TURNS = 60;
 
+/**
+ * Working set. Every read path in the app is synchronous and stays that way;
+ * SQLite mirrors this array rather than replacing it, so a storage fault can
+ * never make the queue unreadable.
+ */
 const cases: LiveCase[] = [];
+
+/**
+ * Restore on boot, so a redeploy mid-incident does not lose the caller.
+ *
+ * Done lazily on first access rather than at module load: Next.js evaluates
+ * modules during the build, and touching the database then would create it in
+ * the image layer instead of the mounted volume.
+ */
+let hydrated = false;
+function hydrate() {
+  if (hydrated) return;
+  hydrated = true;
+  try {
+    const restored = loadCases(MAX_CASES);
+    if (restored.length) cases.push(...restored);
+  } catch (err) {
+    console.error("[caseStore] hydrate failed, continuing empty:", err);
+  }
+}
+
+/** Persist a case without ever letting a storage failure reach the caller. */
+function persist(caseId: string) {
+  const c = cases.find((x) => x.id === caseId);
+  if (c) saveCase(c);
+}
 
 /**
  * Append a turn to a case.
@@ -87,6 +119,7 @@ export function appendTurn(
   // Keep the opening turns — they carry the original report — and drop from
   // the middle, which is where repetition and silence notes accumulate.
   if (c.turns.length > MAX_TURNS) c.turns.splice(4, c.turns.length - MAX_TURNS);
+  saveCase(c);
   return entry;
 }
 
@@ -104,6 +137,7 @@ export function raiseSeverity(caseId: string, severity: string): boolean {
   if (!c) return false;
   if ((SEVERITY_RANK[severity] ?? 0) > (SEVERITY_RANK[c.severity] ?? 0)) {
     c.severity = severity;
+    saveCase(c);
     return true;
   }
   return false;
@@ -133,13 +167,18 @@ export function reviseCase(caseId: string, patch: Partial<LiveCase>): boolean {
 
     (c as Record<string, unknown>)[k] = v;
   }
+  saveCase(c);
   return true;
 }
 
 export function addCase(c: LiveCase) {
+  hydrate();
   c.lastTurnAt = Date.now();
   cases.unshift(c);
+  // Evicted from the working set, but kept on disk — an operator's queue
+  // should not carry last week's incidents, and the record should not vanish.
   if (cases.length > MAX_CASES) cases.length = MAX_CASES;
+  saveCase(c);
 }
 
 /** How long a chat's incident stays the default destination for new messages. */
@@ -154,6 +193,7 @@ export const INCIDENT_TTL_MS = 30 * 60 * 1000;
  * queue, neither of which makes sense alone.
  */
 export function openIncidentFor(chatId: number): LiveCase | undefined {
+  hydrate();
   const now = Date.now();
   return cases.find(
     (c) =>
@@ -177,12 +217,13 @@ export function resolveCase(caseId: string): boolean {
   c.resolvedByOperator = true;
   // Age it past the continuation window so the next message opens fresh.
   c.lastTurnAt = 0;
+  saveCase(c);
   return true;
 }
 
 export function touchCase(caseId: string) {
   const c = cases.find((x) => x.id === caseId);
-  if (c) c.lastTurnAt = Date.now();
+  if (c) { c.lastTurnAt = Date.now(); saveCase(c); }
 }
 
 /** Raise an operator-visible flag, without duplicating it. */
@@ -190,9 +231,11 @@ export function addAttention(caseId: string, flag: string) {
   const c = cases.find((x) => x.id === caseId);
   if (!c) return;
   c.attention = [...new Set([...(c.attention || []), flag])];
+  saveCase(c);
 }
 
 export function listCases(): LiveCase[] {
+  hydrate();
   return cases;
 }
 
@@ -269,6 +312,7 @@ export function backfillLocation(chatId: number, coords: string): string | null 
   );
   if (!target) return null;
   target.location = coords;
+  saveCase(target);
   return target.id;
 }
 

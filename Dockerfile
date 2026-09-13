@@ -33,6 +33,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
+# The SQLite volume mounts here and the app runs unprivileged, so ownership
+# has to be set before dropping to that user.
+RUN mkdir -p /data && chown -R nextjs:nodejs /data
+VOLUME ["/data"]
+
 USER nextjs
 EXPOSE 3000
 
