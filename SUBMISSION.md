@@ -66,9 +66,36 @@ voice console.
 CopilotKit gives the operator an agent-native surface inside the console, with
 shared case context and generative UI rather than a bolted-on chat panel. Exa
 monitors live Indian disaster news so the console knows about a flood before the
-calls arrive. Ambiguous AI handles dispatch workspace tasks. Auth0 guards
-operator routes. Leaflet with OpenStreetMap renders incidents; Nominatim and
-wttr.in add free reverse-geocoding and weather with no API keys.
+calls arrive. Ambiguous AI handles dispatch workspace tasks and acknowledgements.
+Auth0 is installed and a themed operator sign-in page exists, though the console
+currently runs in pass-through demo mode. Leaflet with OpenStreetMap renders
+incidents; Nominatim and wttr.in add free reverse-geocoding and weather with no
+API keys.
+
+WHAT A CHATBOT CANNOT DO
+
+Three things here have no chatbox equivalent, because each needs a view across
+many conversations at once:
+
+- CALL-STORM CLUSTERING. When a building burns, twenty people call. Reports group
+  by category, a 45-minute window and a category-specific radius — 1200m for a
+  flood, 500m for a fire, 250m for an accident — and three independent reports
+  raise a MAJOR INCIDENT. The volume itself becomes the signal. Grouping is a
+  view and never a merge: no case is rewritten or hidden.
+- AUTONOMOUS SLA ESCALATION. A sweeper runs server-side every 30 seconds and
+  escalates a breach on its own, whether or not any operator has the console
+  open. It files a supervisor task in the Ambiguous workspace and deliberately
+  refuses to auto-dispatch or alter severity — a breach is a failure of our
+  response, not new information about the emergency.
+- ADVISORY CREDIBILITY. Grounded in exactly three signals: corroboration by
+  independent callers, prior reports from the same sender an operator already
+  reviewed, and people explicitly saying they are testing. It refuses to treat
+  panic, incoherence, brevity, a child's voice or a missing location as evidence
+  of a hoax, and can never hide, reorder or downgrade a case.
+
+Dispatch routing is a deterministic category-to-agency table the model may add to
+but never subtract from — a fire routes to the fire brigade AND an ambulance —
+with nearest units and real road ETAs from OpenStreetMap Overpass and OSRM.
 
 It is genuinely deployed, not a localhost demo: Dockerised behind a Cloudflare
 named tunnel on self-hosted infrastructure, running as a non-root container with
