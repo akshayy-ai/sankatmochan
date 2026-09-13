@@ -1,0 +1,2 @@
+Next.js serves static assets from this directory and the Dockerfile copies it,
+so it must exist even while empty. The app's favicon lives at src/app/favicon.ico.
