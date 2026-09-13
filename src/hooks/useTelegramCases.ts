@@ -31,7 +31,7 @@ type TelegramCase = {
   callerNumber?: string;
   cluster?: { id: string; size: number; major: boolean };
   attention?: string[];
-  dispatched?: { agency: string; at: string; taskId?: string }[];
+  dispatched?: { agency: string; at: string; taskId?: string; state?: string; escalated?: boolean }[];
   credibility?: { level: string; note?: string; priorDismissals?: number };
 };
 

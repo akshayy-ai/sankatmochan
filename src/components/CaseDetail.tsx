@@ -97,6 +97,16 @@ export default function CaseDetail({ caseId }: Props) {
     return () => { live = false; };
   }, [c.coords]);
 
+  // Pull acknowledgement state back from the workspace while this case is
+  // open. Without it, "dispatched" and "nobody opened it" look identical.
+  useEffect(() => {
+    if (!c.dispatched?.length) return;
+    const pull = () => fetch(`/api/dispatch/status?caseId=${encodeURIComponent(c.id)}`).catch(() => {});
+    pull();
+    const id = setInterval(pull, 20000);
+    return () => clearInterval(id);
+  }, [c.id, c.dispatched?.length]);
+
   const OSM_TYPE: Record<string, string> = {
     POLICE: "police",
     FIRE: "fire_station",
@@ -506,24 +516,45 @@ export default function CaseDetail({ caseId }: Props) {
           <span className="text-[8.5px] tracking-[.12em]" style={{ color: "#3FD9C8" }}>
             DISPATCHED
           </span>
-          {c.dispatched!.map((d) => (
-            <span
-              key={d.agency}
-              className="text-[9.5px] px-[8px] py-[3px] rounded flex items-center gap-[6px]"
-              style={{ background: "#0F2C29", border: "1px solid #2C9C90", color: "#3FD9C8" }}
-              title={d.taskId ? `Ambiguous workspace task ${d.taskId}` : undefined}
-            >
-              <span>{agencyLabel(d.agency as Agency)}</span>
-              <span style={{ color: "#2C9C90" }}>
-                {new Date(d.at).toLocaleTimeString("en-IN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: false,
-                  timeZone: "Asia/Kolkata",
-                })}
+          {c.dispatched!.map((d) => {
+            // An unacknowledged request must not look like a handled one —
+            // that ambiguity is exactly where a scene ends up waiting.
+            const stale = d.escalated && (d.state ?? "pending") === "pending";
+            const tone = stale
+              ? { bg: "#1E1012", br: "#4A2426", fg: "#F2544F" }
+              : d.state === "complete"
+              ? { bg: "#0F1923", br: "#2A3644", fg: "#8A95A6" }
+              : d.state === "accepted"
+              ? { bg: "#0F2C29", br: "#2C9C90", fg: "#3FD9C8" }
+              : { bg: "#1A1208", br: "#3D2A0F", fg: "#E8A33D" };
+            return (
+              <span
+                key={d.agency}
+                className="text-[9.5px] px-[8px] py-[3px] rounded flex items-center gap-[6px]"
+                style={{ background: tone.bg, border: `1px solid ${tone.br}`, color: tone.fg }}
+                title={d.taskId ? `Ambiguous workspace task ${d.taskId}` : undefined}
+              >
+                <span>{agencyLabel(d.agency as Agency)}</span>
+                <span style={{ opacity: 0.8 }}>
+                  {stale
+                    ? "NO RESPONSE"
+                    : d.state === "complete"
+                    ? "COMPLETE"
+                    : d.state === "accepted"
+                    ? "ACCEPTED"
+                    : "AWAITING"}
+                </span>
+                <span style={{ opacity: 0.65 }}>
+                  {new Date(d.at).toLocaleTimeString("en-IN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                    timeZone: "Asia/Kolkata",
+                  })}
+                </span>
               </span>
-            </span>
-          ))}
+            );
+          })}
           {/* Named so it is obvious where the task actually lives, and so a
               reload cannot make a sent dispatch look unsent. */}
           <span className="text-[8.5px]" style={{ color: "#4E5A6B" }}>

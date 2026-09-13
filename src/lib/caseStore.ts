@@ -54,7 +54,15 @@ export type LiveCase = {
    * see what has already gone out. Otherwise the same unit is dispatched
    * twice while another scene waits.
    */
-  dispatched?: { agency: string; at: string; taskId?: string }[];
+  dispatched?: {
+    agency: string;
+    at: string;
+    taskId?: string;
+    /** Workspace lifecycle: nobody opened it / picked up / done. */
+    state?: "pending" | "accepted" | "complete";
+    /** Flagged because nobody acknowledged in time. */
+    escalated?: boolean;
+  }[];
 };
 
 /** One exchange within a case — a caller utterance, an agent line, or a system note. */

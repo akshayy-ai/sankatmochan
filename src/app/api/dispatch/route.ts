@@ -10,7 +10,7 @@
  * provisioned "Sankatmochan Dispatch" agent identity.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { recordDispatch } from "@/lib/caseStore";
+import { getCase, recordDispatch, reviseCase, appendTurn } from "@/lib/caseStore";
 
 const API = process.env.AMBIGUOUS_API_URL ?? "https://api.ambiguous.ai";
 const KEY = process.env.AMBIGUOUS_API_KEY ?? "";
@@ -83,6 +83,21 @@ export async function POST(req: NextRequest) {
     };
 
     // 1. Create a dispatch task in the Ambiguous workspace
+    // Guard before creating, not after. The idempotency check used to run on
+    // the response, so a double-click produced two workspace tasks and two
+    // agencies believing they owned the same scene.
+    if (caseId) {
+      const existing = getCase(caseId)?.dispatched?.find((d) => d.agency === agency);
+      if (existing) {
+        return NextResponse.json({
+          status: "ALREADY_DISPATCHED",
+          taskId: existing.taskId,
+          agency,
+          message: `${agency} was already notified at ${existing.at}.`,
+        });
+      }
+    }
+
     const task = await ambi("/api/tasks", {
       title: `🚨 ${priority} DISPATCH: ${caseId} → ${agency}`,
       description: [
