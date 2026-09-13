@@ -21,6 +21,20 @@
   <img src="https://img.shields.io/badge/Leaflet-Maps-199900?logo=leaflet" alt="Leaflet" />
 </p>
 
+<p align="center">
+  <a href="https://youtu.be/d4DqKCsSLXA">
+    <img src="https://img.shields.io/badge/▶_Watch_the_2_min_demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch the demo" />
+  </a>
+  &nbsp;
+  <a href="https://sankatmochan.rohitdarekar.dpdns.org">
+    <img src="https://img.shields.io/badge/Try_it_live-00D4AA?style=for-the-badge&labelColor=0A0E13" alt="Live deployment" />
+  </a>
+</p>
+
+<p align="center">
+  <i>Or message <a href="https://t.me/sankatmochan_112_bot">@sankatmochan_112_bot</a> on Telegram — in any language.</i>
+</p>
+
 ---
 
 ## 🚨 What is Sankatmochan?

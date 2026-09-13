@@ -248,5 +248,5 @@ AI Tinkerers, OpenAI, CopilotKit, Exa, Auth0, Ambiguous AI
 - [ ] Products/tools ticked (6 boxes + Other)
 - [ ] Team contributions — **replace the two placeholders first**
 - [ ] Social post published, URL pasted back into the form
-- [ ] Video (optional, ≤2 min — longer deducts points)
+- [x] Video — https://youtu.be/d4DqKCsSLXA (unlisted, 2:32)
 - [ ] Additional links
