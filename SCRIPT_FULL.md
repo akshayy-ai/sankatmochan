@@ -1,52 +1,60 @@
-# Full Demo Script — Sankatmochan
+# Demo Script — Sankatmochan
 
-**Bold** = say it. *Italics* = do it.
+**Bold** = say it. *Italics* = do it. Nothing else needs reading.
 
-The form caps you at **2:00** and says longer may deduct points. This script is
-modular: the **SPINE** is 1:10 and covers the strongest material. Add modules
-until you hit 1:55, then stop. Suggested build at the bottom.
+The form caps you at **2:00** and says longer may deduct points. This is built
+as a **1:22 spine** plus timed modules. Add until ~1:55, then stop.
 
 ---
 
 ## BEFORE YOU RECORD
 
-- Console open, **Console tab**, queue visible: https://sankatmochan.rohitdarekar.dpdns.org
-- Telegram on your phone, chat cleared, both windows in frame
-- Ready on the phone: the two Japanese messages, one accident photo
-- Ask me to **"stage the queue"** so it looks like a working shift
-- **Pace: one silent pause only** — the first case landing. Talk through every
-  other wait; the next line covers the processing time.
+- Console open on the **Console tab**, queue visible, both windows in frame
+  https://sankatmochan.rohitdarekar.dpdns.org
+- Telegram on your phone, chat cleared
+- On the phone: the two Japanese messages below, one accident photo
+- Ask me to **"stage the queue"** so the console looks like a working shift
+- **One silent pause in the whole video** — the first case landing. Talk
+  through every other wait; the next line covers the processing time.
 
 ---
 
-# SPINE — 1:10 · record this no matter what
+# SPINE — 1:22
 
-## 1. The problem · 0:18
+## 1. The story · 0:20
 
-*Console on screen, full queue.*
+*Console on screen. Don't touch anything. Just talk.*
 
-**"India's one-one-two line takes two hundred million calls a year, across
-twenty-two official languages. The operator in Pune speaks two of them. When a
-call comes in Telugu, the first ninety seconds go to working out what language
-it even is — before anyone learns someone is drowning."**
+**"It's two in the morning in Pune. A hotel corridor is filling with smoke.
+Someone is on the phone to one-one-two, and they're speaking Japanese —
+because they landed yesterday."**
+
+*Beat.*
+
+**"The operator speaks Marathi and Hindi. Both of them are doing everything
+right. Neither one can help the other."**
+
+*Beat.*
+
+**"That gap is what we built Sankatmochan for. Two hundred million calls a
+year, twenty-two official languages, and an operator who speaks two of them."**
 
 ## 2. Live ingest · 0:25 ← the money shot
 
-*Pick up the phone.*
+*Pick up the phone — same motion as the story.*
 
-**"I'll report an emergency from my own phone, in Japanese. A tourist in Pune —
-no Hindi, no idea where they are."**
+**"So let's be that caller. This is my own phone, and this is Japanese."**
 
 *Paste. Send.*
 ```
 助けてください！プネのコタルドにあるホテルで火事です
 ```
 
-***Point at the console. Silence until the case lands.***
+***Point at the console. Silence until the case lands. Do not fill it.***
 
-**"Three seconds. Detected Japanese, translated it, classified it critical,
-geocoded it, started an eight-minute countdown. That's OpenAI doing language
-ID, translation and triage in one pass."**
+**"Three seconds. It detected Japanese, translated it, classified it critical,
+category fire, geocoded it to Kothrud, and started an eight-minute countdown.
+That's OpenAI doing language ID, translation and triage in a single pass."**
 
 ## 3. Conversation state · 0:17
 
@@ -56,13 +64,13 @@ ID, translation and triage in one pass."**
 ```
 
 **"That's not a second case — it joins the first, and gets triaged with the
-incident. Alone, 'two children trapped upstairs' is a fragment. Inside an open
-fire, it escalates it."**
+incident. On its own, 'two children trapped upstairs' is a fragment. Inside an
+open fire, it escalates it."**
 
 ## 4. Close · 0:10
 
-**"Five channels in. One queue out. It's live right now — message the bot
-yourself, in your own language."**
+**"Five channels in. One queue out. Sankatmochan is live right now — message
+the bot yourself, in your own language."**
 
 ---
 
@@ -80,16 +88,16 @@ hazards. For a caller who can't describe what they're looking at."**
 **"And a voice note, because in a real emergency people don't type, they
 shout."**
 
-## B. Dispatch + Ambiguous · +0:20 ★ take this second
+## B. Dispatch + Ambiguous · +0:20 ★ second
 
 *Click the case, scroll to the bottom.*
 
 **"A fire routes to the fire brigade and an ambulance. It creates a real task
 in the Ambiguous AI workspace — and the acknowledgement comes back, so a
-request nobody opened stops looking like a unit on the road. It names the
-actual station, with the real driving time."**
+request nobody opened stops looking like a unit already on the road. It names
+the actual station, with the real driving time."**
 
-## C. Autonomy · +0:12 ★ take this third — strongest single line
+## C. Autonomy · +0:12 ★ third — strongest single line
 
 *Show the queue, or a case with a breach banner.*
 
@@ -97,28 +105,27 @@ actual station, with the real driving time."**
 when a case passes its deadline it escalates on its own, whether or not anyone
 has this screen open."**
 
-## D. Exa · +0:08
+## D. Visitor · +0:12
+
+*Click the 🌐 Visitor filter.*
+
+**"Our caller wasn't unusual. Spanish, Japanese, Arabic — right to left
+included. And every one of them says the same thing: I don't know where I am. A
+resident names a landmark. A visitor can't. So it asks for a map pin instead."**
+
+## E. Exa · +0:08
 
 *Point at the strip under the header.*
 
 **"That's Exa — live Indian disaster news, so the console knows before the
 calls arrive."**
 
-## E. Visitor · +0:14
-
-*Click the 🌐 Visitor filter.*
-
-**"Visitors dial the same one-one-two. Spanish, Japanese, Arabic, right-to-left
-included. And every one of them says the same thing — I don't know where I am.
-A resident names a landmark. A tourist can't. So it asks for a map pin
-instead."**
-
 ## F. Call storm · +0:15
 
 *Click a case with a ×4 badge.*
 
-**"When a building burns, twenty people call. Each used to be its own case.
-Now they collapse into one incident with four corroborating callers — and the
+**"When a building burns, twenty people call. Each used to be its own case. Now
+they collapse into one incident with four corroborating callers — and the
 volume itself becomes the signal that it's serious."**
 
 ## G. SMS · +0:10
@@ -130,8 +137,8 @@ a smartphone. SMS reaches the people who actually dial one-one-two."**
 
 *Click the copilot panel, type "summarise this case".*
 
-**"CopilotKit gives the operator an agent that already knows which case
-they're on."**
+**"CopilotKit gives the operator an agent that already knows which case they're
+looking at."**
 
 ---
 
@@ -139,49 +146,63 @@ they're on."**
 
 > ⚠️ **UNTESTED WITH A REAL VOICE.** It connects and transcription is on
 > gpt-4o-transcribe, but nobody has ever spoken to it. **Test it once before
-> you record.** If it works, it is the best thing in the demo. If it stalls on
-> camera you lose the take — there is no recovering 25 seconds of dead air.
+> you record.** If it works it is the best thing in the demo. If it stalls you
+> lose the take — 25 seconds of dead air cannot be recovered unedited.
 
 *Click the **📞 Voice** tab.*
 
-**"This is the voice agent — a simulated one-one-two call. No language
-selector. It detects whatever you speak."**
+**"And there's the call itself. No language selector — it detects whatever you
+speak."**
 
-*Click **Start 112 Call**. Speak in Hindi or your own language:*
+*Click **Start 112 Call**. Speak:*
 
 > "मेरे घर में आग लगी है, दो बच्चे अंदर फंसे हैं"
 
-**"It's listening, transcribing and answering in the caller's own language —
-and filing the case while it talks."**
+**"It's listening, answering in the caller's own language, and filing the case
+while it talks."**
 
-*Switch to Console, show the case.*
+*Switch to Console.*
 
 **"Same queue. A phone call and a text message end up in the same place."**
 
 ### If you'd rather not risk it
 
-Say this over the Console instead — it's true, and costs 8 seconds:
+One honest line over the Console, 8 seconds:
 
 **"There's also a live voice agent and real inbound phone calls over Vobiz —
 answered and triaged in Hindi, into this same queue."**
 
 ---
 
-# SUGGESTED BUILD — 1:53
+# SUGGESTED BUILD — 1:52
 
 | | | |
 |---|---|---|
-| SPINE | | 1:10 |
+| SPINE | story → send → follow-up → close | 1:22 |
 | **A** | photo + voice | +0:18 |
-| **B** | dispatch + Ambiguous | +0:20 |
 | **C** | autonomy | +0:12 |
-| | **total** | **2:00** |
+| | **total** | **1:52** |
 
-Tight. Drop module B's last sentence if you run over.
+The story costs 12 seconds more than a statistic and is worth it. If you want
+module B as well, cut the second beat of the story and open straight on
+*"The operator speaks Marathi and Hindi."*
 
-**If the voice call tests clean**, swap module B for module V — a working AI
-phone call beats a dispatch button, and you keep Ambiguous in the written
-submission.
+**If the voice call tests clean**, swap module A for module V — a working AI
+phone call beats a photo, and photos still appear in the written submission.
+
+---
+
+# WHY THE STORY WORKS
+
+Don't rush the two beats. The pauses are the whole effect.
+
+**"Both of them are doing everything right"** is the load-bearing line — it
+stops the story blaming anyone and turns it into a systems problem, which is
+the kind of problem software is allowed to solve.
+
+And it sets up your next move: you say *they're speaking Japanese*, then you
+pick up your phone and send Japanese. The story and the demo are the same
+motion, not a gear change.
 
 ---
 
@@ -190,12 +211,12 @@ submission.
 - ❌ "Production-ready" — single box, SQLite-backed
 - ❌ "Dispatches units" — it files tasks; no vehicle moves
 - ❌ "Ninety languages" — say **fifteen verified live**
-- ❌ A list of ten sponsor names — judges hear padding. Name each one at the
-  moment it is visibly doing something.
+- ❌ A list of ten sponsor names. Judges hear padding. Name each one at the
+  moment it is visibly doing something on screen.
 
 If asked about limits: single instance, SQLite working set, translation bridge
-designed but not built. Stated plainly it reads as judgement. Discovered by a
-judge, it reads as overselling.
+designed but not built. Stated plainly that reads as judgement; discovered by a
+judge it reads as overselling.
 
 ---
 
