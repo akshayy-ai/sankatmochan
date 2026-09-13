@@ -2,12 +2,19 @@
  * /api/dispatch — Ambiguous AI dispatch endpoint.
  *
  * When the CopilotKit agent confirms an escalation, this route:
- * 1. Creates a Task in the Ambiguous workspace (dispatch record)
- * 2. Sends an email notification to the target agency
- * 3. Logs the action in a Doc (incident log)
+ * 1. Creates a Task in the Ambiguous workspace — the dispatch record, and the
+ *    critical path. /api/dispatch/status later reads its acknowledgement back
+ *    onto the case.
+ * 2. Sends an email to the target agency. Best-effort only: the failure is
+ *    swallowed below and the dispatch still reports DISPATCHED with
+ *    emailSent:false, because a task an agency can see beats no record at all.
  *
- * All operations go through the Ambiguous REST API using the
- * provisioned "Sankatmochan Dispatch" agent identity.
+ * The agency addresses are demo placeholders on a domain that does not resolve
+ * (see AGENCY_EMAILS). No real agency is contacted by this code.
+ *
+ * There is no Doc/incident-log write — an earlier version of this comment
+ * claimed one. The per-case audit trail lives in the case store, not the
+ * workspace.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getCase, recordDispatch, reviseCase, appendTurn } from "@/lib/caseStore";

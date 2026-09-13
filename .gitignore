@@ -30,8 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — never commit real ones. The *.example files carry placeholders
+# only and must be tracked: the quickstart and `docker compose up` both copy
+# from them.
 .env*
+!.env.local.example
+!.env.tunnel.example
 
 # vercel
 .vercel

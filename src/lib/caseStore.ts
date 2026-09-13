@@ -7,8 +7,10 @@ import { saveCase, loadCases } from "./persistence";
  * here, and the operator console polls it, so a case raised from any channel
  * lands in the same queue.
  *
- * In-memory is deliberate for the demo: no DB to provision, and the console
- * polls the same process. It resets on redeploy.
+ * The working set is held in memory and mirrored write-through to SQLite (see
+ * ./persistence), so cases survive a restart or redeploy. Reads never touch the
+ * disk: an emergency queue cannot wait on I/O, and a disk fault disables the
+ * mirror rather than blocking ingest.
  */
 
 export type LiveCase = {
