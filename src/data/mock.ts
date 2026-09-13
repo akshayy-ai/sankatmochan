@@ -22,6 +22,8 @@ export type CrisisCase = {
   channel: "VOICE" | "WHATSAPP" | "SMS" | "TELEGRAM" | "TG VOICE" | "TG PHOTO" | "112 CALL";
   /** True for cases ingested live (Telegram) rather than seeded into the console */
   isLive?: boolean;
+  /** Set when other reports describe the same incident. */
+  cluster?: { id: string; size: number; major: boolean };
   timestamp: string;
   time: string;
   status: string; // "BRIDGE OPEN", "AMB EN ROUTE", "FIRE DISPATCHED", "TRIAGE", "MONITORING"

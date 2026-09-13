@@ -227,6 +227,42 @@ export default function CaseDetail({ caseId }: Props) {
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto min-h-0 px-5 pt-[14px] pb-6">
+        {/* Corroborating reports — only shown when others describe this same
+            incident. Framed as evidence, not noise: independent reports of one
+            fire are the strongest confirmation an operator can get. */}
+        {c.cluster && (
+          <div
+            className="mb-4 rounded-[5px] p-[12px]"
+            style={{
+              border: `1px solid ${c.cluster.major ? "#4A2426" : "#232C38"}`,
+              background: c.cluster.major ? "#1E1012" : "#0D1117",
+            }}
+          >
+            <div className="flex items-center gap-[9px] mb-[5px]">
+              <span
+                className="w-[5px] h-[5px] rounded-full"
+                style={{ background: c.cluster.major ? "#F2544F" : "#8A95A6" }}
+              />
+              <span
+                className="text-[9px] font-semibold tracking-[.12em]"
+                style={{ color: c.cluster.major ? "#F2544F" : "#8A95A6" }}
+              >
+                {c.cluster.major ? "MAJOR INCIDENT" : "CORROBORATED"}
+              </span>
+              <span className="text-[9.5px]" style={{ color: "#6E7A8C" }}>
+                {c.cluster.size} separate callers
+              </span>
+            </div>
+            <div className="text-[11.5px] font-sans leading-relaxed" style={{ color: "#C3CCD8", maxWidth: "88ch" }}>
+              {c.cluster.size} people have reported what appears to be this same{" "}
+              {c.category.toLowerCase()} nearby, within the last 45 minutes.
+              {c.cluster.major
+                ? " Independent corroboration at this volume usually means a large or spreading event — consider escalating beyond the nearest single unit."
+                : " Each caller remains separately contactable on their own case."}
+            </div>
+          </div>
+        )}
+
         {/* Alert banner */}
         {c.alert && (
           <div

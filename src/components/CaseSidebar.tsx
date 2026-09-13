@@ -199,7 +199,20 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
 
                 {/* Right: SLA + owner */}
                 <div className="flex items-center justify-end gap-[6px]">
-                  <SlaChip caseId={c.id} slaMinutes={c.slaMinutes} />
+                  {c.cluster && (
+              <span
+                className="text-[8px] font-semibold px-[4px] py-[1px] rounded"
+                style={{
+                  background: c.cluster.major ? "#1E1012" : "#141B25",
+                  color: c.cluster.major ? "#F2544F" : "#8A95A6",
+                  border: `1px solid ${c.cluster.major ? "#4A2426" : "#232C38"}`,
+                }}
+                title={`${c.cluster.size} separate reports describe this incident`}
+              >
+                ×{c.cluster.size}
+              </span>
+            )}
+            <SlaChip caseId={c.id} slaMinutes={c.slaMinutes} />
                   {c.owner && (
                     <span
                       className="w-[18px] h-[18px] rounded-full flex items-center justify-center text-[7px] font-semibold"

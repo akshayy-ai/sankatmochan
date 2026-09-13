@@ -15,6 +15,7 @@ import {
   touchCase,
   type LiveCase,
 } from "@/lib/caseStore";
+import { clusterCases } from "@/lib/clustering";
 
 /**
  * Telegram Bot Webhook — receives text, voice, AND image emergency messages
@@ -36,7 +37,23 @@ type TelegramCase = LiveCase;
 // GET — dashboard can poll for new Telegram cases
 export async function GET() {
   const cases = listCases();
-  return NextResponse.json({ cases, count: cases.length });
+
+  // Group reports of the same incident. Cases are returned untouched — the
+  // cluster is a view over them, never a rewrite, so a wrong grouping can
+  // never hide somebody's emergency.
+  const clusters = clusterCases(cases);
+  const byCase = new Map<string, { id: string; size: number; major: boolean }>();
+  for (const cl of clusters) {
+    for (const id of cl.caseIds) {
+      byCase.set(id, { id: cl.id, size: cl.caseIds.length, major: cl.major });
+    }
+  }
+
+  return NextResponse.json({
+    cases: cases.map((c) => ({ ...c, cluster: byCase.get(c.id) })),
+    count: cases.length,
+    clusters,
+  });
 }
 
 // POST — Telegram sends updates here
