@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CASES, type CrisisCase, type TimelineEvent } from "@/data/mock";
+import { useDemoCorpus, workingSet } from "./useDemoCorpus";
 
 /**
  * Live Telegram case ingest.
@@ -306,8 +307,26 @@ export function useTelegramCases(): CrisisCase[] {
   return liveCases;
 }
 
-/** Live Telegram cases followed by the seeded console cases. */
+/**
+ * What the console shows: live cases first, then seeded ones.
+ *
+ * Live always leads — a real caller must never be pushed below demo data. The
+ * corpus contributes only a working set (see useDemoCorpus), not all thousand
+ * cases, because the sidebar renders every row it is handed.
+ *
+ * Everything after `live` carries `isLive: false`, which is how the Pipeline tab
+ * and the stats view tell traffic this deployment actually handled from data
+ * that was seeded for the demo.
+ */
+export function useFullCorpus(): CrisisCase[] {
+  return useDemoCorpus();
+}
+
 export function useAllCases(): CrisisCase[] {
   const live = useTelegramCases();
-  return [...live, ...CASES];
+  const corpus = useDemoCorpus();
+  return useMemo(
+    () => [...live, ...CASES, ...workingSet(corpus)],
+    [live, corpus]
+  );
 }

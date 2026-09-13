@@ -7,12 +7,13 @@ import CaseSidebar from "@/components/CaseSidebar";
 import CaseDetail from "@/components/CaseDetail";
 import CopilotPanel from "@/components/CopilotPanel";
 import AgentCanvas from "@/components/AgentCanvas";
+import ShiftStats from "@/components/ShiftStats";
 import VoiceCallPanel from "@/components/VoiceCallPanel";
 import { EmergencyContext } from "@/components/EmergencyContext";
 import { GenerativeUI } from "@/components/GenerativeUI";
 import RegionalAlerts from "@/components/RegionalAlerts";
 import { CASES } from "@/data/mock";
-import { useAllCases } from "@/hooks/useTelegramCases";
+import { useAllCases, useFullCorpus } from "@/hooks/useTelegramCases";
 
 export default function Home() {
   const [selectedCase, setSelectedCase] = useState<string | null>("CASE-0471");
@@ -21,6 +22,7 @@ export default function Home() {
   // Live ids are TG-/SMS-/CALL-; the seeded array is all CASE-04xx, so looking
   // only in CASES hands the agent a null context for every live case.
   const allCases = useAllCases();
+  const corpus = useFullCorpus();
   const selectedCaseData = allCases.find((c) => c.id === selectedCase) ?? null;
 
   const handleSelectCase = useCallback((id: string) => {
@@ -59,6 +61,8 @@ export default function Home() {
           <div className="flex-1 min-h-0">
             <AgentCanvas cases={allCases} />
           </div>
+        ) : view === "stats" ? (
+          <ShiftStats corpus={corpus} liveCount={allCases.filter((c) => c.isLive).length} />
         ) : view === "voice" ? (
           <div className="flex-1 flex min-h-0">
             <div className="flex-1 flex items-center justify-center">

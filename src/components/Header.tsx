@@ -4,7 +4,7 @@ import type { CrisisCase } from "@/data/mock";
 import { useEffect, useState } from "react";
 import UserMenu from "./UserMenu";
 
-export type ViewKey = "console" | "pipeline" | "bridge" | "voice";
+export type ViewKey = "console" | "pipeline" | "stats" | "bridge" | "voice";
 
 type Props = {
   view: ViewKey;
@@ -22,9 +22,10 @@ type Props = {
 const TABS: { key: ViewKey; label: string; shortcut: string; planned?: boolean }[] = [
   { key: "console", label: "Console", shortcut: "1" },
   { key: "pipeline", label: "Pipeline", shortcut: "2" },
+  { key: "stats", label: "Shift Stats", shortcut: "3" },
   // Not built. Marked so nobody opens it expecting a working feature.
-  { key: "bridge", label: "Bridge", shortcut: "3", planned: true },
-  { key: "voice", label: "📞 Voice", shortcut: "4" },
+  { key: "bridge", label: "Bridge", shortcut: "4", planned: true },
+  { key: "voice", label: "📞 Voice", shortcut: "5" },
 ];
 
 export default function Header({ view, onViewChange, cases }: Props) {
