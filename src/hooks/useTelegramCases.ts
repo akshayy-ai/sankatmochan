@@ -33,6 +33,8 @@ type TelegramCase = {
   attention?: string[];
   dispatched?: { agency: string; at: string; taskId?: string; state?: string; escalated?: boolean }[];
   credibility?: { level: string; note?: string; priorDismissals?: number };
+  slaEscalated?: boolean;
+  slaWarned?: boolean;
 };
 
 const LANG_CODE: Record<string, string> = {
@@ -52,12 +54,9 @@ const LANG_CODE: Record<string, string> = {
 /** Default to Pune so geocode/weather/map still resolve when no pin was shared */
 const FALLBACK_COORDS = "18.5204,73.8567";
 
-const SLA_BY_SEVERITY: Record<string, number> = {
-  CRITICAL: 8,
-  HIGH: 15,
-  MEDIUM: 30,
-  LOW: 60,
-};
+// Imported rather than redeclared: the countdown an operator watches and the
+// deadline the server escalates on have to be the same number.
+import { slaMinutesFor } from "@/lib/sla";
 
 const CHANNEL_LABEL: Record<TelegramCase["channel"], string> = {
   TEXT: "TELEGRAM",
@@ -214,12 +213,14 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
         ? "SMS:INBOUND"
         : `TG:${t.channel}`,
     ],
-    slaMinutes: SLA_BY_SEVERITY[severity] ?? 30,
+    slaMinutes: slaMinutesFor(severity),
     isLive: true,
     cluster: t.cluster,
     attention: t.attention,
     dispatched: t.dispatched,
     credibility: t.credibility,
+    slaEscalated: t.slaEscalated,
+    slaWarned: t.slaWarned,
   };
 }
 

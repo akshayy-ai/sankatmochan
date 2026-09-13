@@ -260,6 +260,39 @@ export default function CaseDetail({ caseId }: Props) {
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto min-h-0 px-5 pt-[14px] pb-6">
+        {/* SLA escalation — the system acting when nobody else did. Shown
+            first because it is about our failure to respond, not the
+            caller's emergency. */}
+        {(c.slaEscalated || c.slaWarned) && (
+          <div
+            className="mb-4 rounded-[5px] p-[12px]"
+            style={{
+              border: `1px solid ${c.slaEscalated ? "#4A2426" : "#3D2A0F"}`,
+              background: c.slaEscalated ? "#1E1012" : "#1A1208",
+            }}
+          >
+            <div className="flex items-center gap-[9px] mb-[5px]">
+              <span
+                className={`w-[5px] h-[5px] rounded-full ${c.slaEscalated ? "animate-pulse" : ""}`}
+                style={{ background: c.slaEscalated ? "#F2544F" : "#E8A33D" }}
+              />
+              <span
+                className="text-[9px] font-semibold tracking-[.12em]"
+                style={{ color: c.slaEscalated ? "#F2544F" : "#E8A33D" }}
+              >
+                {c.slaEscalated ? "SLA BREACHED — ESCALATED" : "SLA AT RISK"}
+              </span>
+            </div>
+            <div className="text-[11.5px] font-sans leading-relaxed" style={{ color: "#C3CCD8", maxWidth: "84ch" }}>
+              {c.slaEscalated
+                ? (c.dispatched?.length
+                    ? "This case passed its response deadline. Agencies were notified but nobody has closed it out — confirm a unit is actually on scene."
+                    : "This case passed its response deadline with no agency notified at all. Escalated to the dispatch workspace.")
+                : "Approaching the response deadline with nothing dispatched yet."}
+            </div>
+          </div>
+        )}
+
         {/* Caller context — advisory only. This never hides, reorders or
             downgrades a case; it tells an operator what a previous operator
             already decided about this sender, and nothing more. */}

@@ -17,6 +17,7 @@ import {
 } from "@/lib/caseStore";
 import { clusterCases } from "@/lib/clustering";
 import { assessCredibility } from "@/lib/credibility";
+import { startSlaMonitor } from "@/lib/slaMonitor";
 
 /**
  * Telegram Bot Webhook — receives text, voice, AND image emergency messages
@@ -37,6 +38,8 @@ type TelegramCase = LiveCase;
 
 // GET — dashboard can poll for new Telegram cases
 export async function GET() {
+  // The clock must run whether or not anybody has the console open.
+  startSlaMonitor();
   const cases = listCases();
 
   // Group reports of the same incident. Cases are returned untouched — the

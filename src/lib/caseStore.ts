@@ -54,6 +54,10 @@ export type LiveCase = {
    * see what has already gone out. Otherwise the same unit is dispatched
    * twice while another scene waits.
    */
+  /** Warned that the SLA is close with nothing dispatched. */
+  slaWarned?: boolean;
+  /** Escalated after the SLA passed. Set once, so it does not repeat. */
+  slaEscalated?: boolean;
   dispatched?: {
     agency: string;
     at: string;

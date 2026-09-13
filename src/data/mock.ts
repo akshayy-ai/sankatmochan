@@ -30,6 +30,9 @@ export type CrisisCase = {
   dispatched?: { agency: string; at: string; taskId?: string; state?: string; escalated?: boolean }[];
   /** Advisory context for the operator. Never gates or hides anything. */
   credibility?: { level: string; note?: string; priorDismissals?: number };
+  /** Set by the server-side SLA monitor when a case runs past its deadline. */
+  slaEscalated?: boolean;
+  slaWarned?: boolean;
   timestamp: string;
   time: string;
   status: string; // "BRIDGE OPEN", "AMB EN ROUTE", "FIRE DISPATCHED", "TRIAGE", "MONITORING"
