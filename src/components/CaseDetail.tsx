@@ -10,7 +10,7 @@ import {
   type Agency,
 } from "@/lib/dispatchRouting";
 import { useState, useEffect } from "react";
-import { useAllCases } from "@/hooks/useTelegramCases";
+import { useAllCases, isVisitorLanguage } from "@/hooks/useTelegramCases";
 import IncidentMap from "./IncidentMap";
 
 const sevColor: Record<CrisisCase["severity"], string> = {
@@ -43,7 +43,22 @@ const SCRIPT_FONT: Record<string, string> = {
   "ta-IN": "'Noto Sans Tamil'",
   "or-IN": "'Noto Sans Oriya'",
   "gu-IN": "'Noto Sans Gujarati'",
+  "kn-IN": "'Noto Sans Kannada'",
+  "ml-IN": "'Noto Sans Malayalam'",
+  "pa-IN": "'Noto Sans Gurmukhi'",
+  // Visitor scripts. Without these, Japanese and Arabic fell back to a Latin
+  // face and rendered as boxes — unreadable to the one person who needs it.
+  ar: "'Noto Naskh Arabic'",
+  he: "'Noto Sans Hebrew'",
+  fa: "'Noto Naskh Arabic'",
+  ja: "'Noto Sans JP'",
+  zh: "'Noto Sans SC'",
+  ko: "'Noto Sans KR'",
+  th: "'Noto Sans Thai'",
 };
+
+/** Arabic, Hebrew and Persian read right to left. */
+const RTL = new Set(["ar", "he", "fa", "ur-IN"]);
 
 type Props = { caseId: string | null };
 
@@ -330,6 +345,32 @@ export default function CaseDetail({ caseId }: Props) {
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto min-h-0 px-5 pt-[14px] pb-6">
+        {/* Visitor — a caller with no Indian language. The point is not that
+            they are foreign, it is that the usual way of finding someone does
+            not work for them. */}
+        {isVisitorLanguage(c.langCode) && (
+          <div
+            className="mb-4 rounded-[5px] p-[12px]"
+            style={{ border: "1px solid #1A2D3D", background: "#0F1923" }}
+          >
+            <div className="flex items-center gap-[9px] mb-[5px]">
+              <span className="w-[5px] h-[5px] rounded-full" style={{ background: "#8DC6E8" }} />
+              <span className="text-[9px] font-semibold tracking-[.12em]" style={{ color: "#8DC6E8" }}>
+                VISITOR · {c.lang.toUpperCase()}
+              </span>
+            </div>
+            <div className="text-[11.5px] font-sans leading-relaxed" style={{ color: "#C3CCD8", maxWidth: "84ch" }}>
+              This caller is not speaking an Indian language. They likely cannot
+              name a local landmark, may not know which city they are in, and may
+              have no Indian number to be called back on.
+              {c.location === "Location not shared"
+                ? " No location has been shared — a map pin is the fastest way to find them."
+                : ""}
+              {" "}Replies go out in {c.lang}.
+            </div>
+          </div>
+        )}
+
         {/* SLA escalation — the system acting when nobody else did. Shown
             first because it is about our failure to respond, not the
             caller's emergency. */}
@@ -509,6 +550,7 @@ export default function CaseDetail({ caseId }: Props) {
             </div>
             <p
               className="leading-[1.6]"
+              dir={RTL.has(c.langCode) ? "rtl" : "ltr"}
               style={{ fontFamily: `${scriptFont}, 'IBM Plex Sans', sans-serif`, fontSize: 15, color: "#E6EAF0" }}
             >
               {c.nativeText}

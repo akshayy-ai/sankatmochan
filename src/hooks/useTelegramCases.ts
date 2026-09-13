@@ -50,8 +50,42 @@ const LANG_CODE: Record<string, string> = {
   Malayalam: "ml-IN",
   Odia: "or-IN",
   Punjabi: "pa-IN",
+  Assamese: "as-IN",
+  Urdu: "ur-IN",
   English: "en-IN",
+
+  // Visitors and migrant workers dial the same 112. Without these every
+  // foreign-language case was labelled en-IN, so a Spanish report showed as
+  // English in the queue and rendered in the wrong font.
+  Spanish: "es",
+  French: "fr",
+  German: "de",
+  Japanese: "ja",
+  Chinese: "zh",
+  Mandarin: "zh",
+  Korean: "ko",
+  Arabic: "ar",
+  Russian: "ru",
+  Portuguese: "pt",
+  Italian: "it",
+  Dutch: "nl",
+  Thai: "th",
+  Vietnamese: "vi",
+  Indonesian: "id",
+  Turkish: "tr",
+  Hebrew: "he",
+  Persian: "fa",
+  Farsi: "fa",
+  Nepali: "ne",
+  Sinhala: "si",
+  Burmese: "my",
+  Swahili: "sw",
 };
+
+/** A language with no -IN suffix is a visitor: not resident in India. */
+export function isVisitorLanguage(langCode: string): boolean {
+  return !!langCode && !langCode.endsWith("-IN");
+}
 
 /** Default to Pune so geocode/weather/map still resolve when no pin was shared */
 const FALLBACK_COORDS = "18.5204,73.8567";

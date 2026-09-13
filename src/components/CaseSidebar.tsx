@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CASES, type CrisisCase } from "@/data/mock";
 import { useSlaTimer } from "@/hooks/useSlaTimer";
-import { useAllCases } from "@/hooks/useTelegramCases";
+import { useAllCases, isVisitorLanguage } from "@/hooks/useTelegramCases";
 
 /** Small component so we can call the SLA hook per-case inside the list */
 function SlaChip({ caseId, slaMinutes }: { caseId: string; slaMinutes: number }) {
@@ -59,6 +59,10 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
   const flaggedCount = allCases.filter(
     (c) => c.alert || (c.attention?.length ?? 0) > 0
   ).length;
+  // Visitors dial the same 112 as residents and are the least equipped to be
+  // found: no local network, no Indian landmark to name, often no idea which
+  // city they are in.
+  const visitorCount = allCases.filter((c) => isVisitorLanguage(c.langCode)).length;
 
   const filtered =
     filter === "all"
@@ -73,6 +77,8 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
       ? allCases.filter((c) => c.alert || (c.attention?.length ?? 0) > 0)
       : filter === "live"
       ? allCases.filter((c) => c.isLive)
+      : filter === "visitor"
+      ? allCases.filter((c) => isVisitorLanguage(c.langCode))
       : allCases;
 
   const sortBtn = (key: typeof sort) =>
@@ -122,6 +128,7 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
             { key: "unclaimed", label: "Unclaimed" },
             { key: "critical", label: "Critical" },
             { key: "flagged", label: `Needs review${flaggedCount ? ` ${flaggedCount}` : ""}` },
+            ...(visitorCount ? [{ key: "visitor", label: `🌐 Visitor ${visitorCount}` }] : []),
           ].map((f) => (
             <button
               key={f.key}
