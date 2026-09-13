@@ -10,6 +10,7 @@ import AgentCanvas from "@/components/AgentCanvas";
 import VoiceCallPanel from "@/components/VoiceCallPanel";
 import { EmergencyContext } from "@/components/EmergencyContext";
 import { GenerativeUI } from "@/components/GenerativeUI";
+import RegionalAlerts from "@/components/RegionalAlerts";
 import { CASES } from "@/data/mock";
 import { useAllCases } from "@/hooks/useTelegramCases";
 
@@ -37,6 +38,10 @@ export default function Home() {
       <GenerativeUI />
 
       <Header view={view} onViewChange={setView} />
+
+      {/* Live regional picture, above the queue but outside it — an operator
+          should see a flood unfolding upstream before the calls arrive. */}
+      <RegionalAlerts />
 
       <div className="flex-1 flex min-h-0">
         {view === "console" ? (
