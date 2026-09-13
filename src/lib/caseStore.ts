@@ -495,9 +495,17 @@ export async function analyzeEmergency(
 ): Promise<Analysis> {
   if (!OPENAI_KEY) return { ...FALLBACK, translation: text };
 
+  // NEVER promise that help is coming.
+  //
+  // Nothing is dispatched until an operator acts, so "help is on the way" is
+  // false at the moment it is said. Told to someone in a burning building it
+  // can stop them self-rescuing, stop them calling a neighbour who could
+  // actually reach them, and stop them calling the real 112. The reply
+  // confirms the report reached a control room — which is true — and points
+  // at 112 for immediate danger.
   const replyRule = opts.spokenReply
-    ? `"response": "A short reply in the SAME LANGUAGE as the caller, written to be READ ALOUD over a phone line. Two sentences maximum. Confirm help is coming and state the case number will follow. No markdown, no emoji, no English translation in brackets."`
-    : `"response": "If is_emergency=true: a brief acknowledgment in the SAME LANGUAGE as the input, reassuring the caller that help is being dispatched, with English translation in parentheses. If is_emergency=false: a friendly conversational reply in the SAME LANGUAGE, reminding them this is an emergency helpline and how to report emergencies."`;
+    ? `"response": "A short reply in the SAME LANGUAGE as the caller, written to be READ ALOUD over a phone line. Two sentences maximum. Confirm their report has been recorded and that an operator is reviewing it. NEVER say help is on the way, that units have been sent, or give any arrival time — nothing has been dispatched yet. Stay calm and steady. No markdown, no emoji, no English translation in brackets."`
+    : `"response": "If is_emergency=true: a brief acknowledgment in the SAME LANGUAGE as the input, with English translation in parentheses. Say their report has reached the control room and an operator is reviewing it, and tell them to call 112 if they are in immediate danger. NEVER say help is on the way, that anyone has been sent, or give an arrival time — nothing has been dispatched yet. If is_emergency=false: a friendly conversational reply in the SAME LANGUAGE, reminding them this is an emergency helpline and how to report emergencies."`;
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {

@@ -400,8 +400,9 @@ async function processMessage(message: TelegramMessage) {
         `${sevEmoji} *Case ${caseId} created*\n\n` +
         `📋 ${c?.category} · ⚠️ ${c?.severity} · 🗣️ ${c?.language}\n\n` +
         `🔄 _${analysis.translation}_\n\n` +
-        (analysis.response || "Your report has been registered.") +
-        `\n\n📍 Share your location so responders can find you.`
+        (analysis.response || "Your report has reached the control room and an operator is reviewing it.") +
+        `\n\n📍 Share your location so responders can find you.` +
+        `\n📞 If you are in immediate danger, call *112*.`
       );
     } else {
       // Follow-ups get one short line, not the whole card again. Re-sending a
