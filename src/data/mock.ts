@@ -19,7 +19,7 @@ export type CrisisCase = {
   translit: string;
   location: string;
   coords: string;
-  channel: "VOICE" | "WHATSAPP" | "SMS" | "TELEGRAM" | "TG VOICE" | "TG PHOTO" | "112 CALL";
+  channel: "VOICE" | "SMS" | "TELEGRAM" | "TG VOICE" | "TG PHOTO" | "112 CALL";
   /** True for cases ingested live (Telegram) rather than seeded into the console */
   isLive?: boolean;
   /** Set when other reports describe the same incident. */
@@ -119,7 +119,7 @@ export const CASES: CrisisCase[] = [
       { time: "00:01.2", action: "Streaming transcription started", badge: "asr", duration: "412ms", detail: "Partial hypotheses streaming at 180ms cadence. Background noise flagged: running water, 68 dB.", status: "done" },
       { time: "00:02.8", action: "Segment translated te → en", badge: "translate", duration: "286ms", detail: "\"Water is coming into the house. My mother is on the bed, she cannot move.\"", status: "done" },
       { time: "00:03.1", action: "Threat classified FLOOD · CRITICAL", badge: "classify", duration: "190ms", detail: "Immobile dependent + rising water on ground floor triggers CRITICAL override from HIGH baseline.", status: "done" },
-      { time: "00:03.6", action: "Location resolved to Sangli Ward 12", badge: "geo", duration: "520ms", detail: "Tower fix refined with WhatsApp pin history; 42m radius. Matched active SDRF flood zone SNG-FLD-03.", status: "done" },
+      { time: "00:03.6", action: "Location resolved to Sangli Ward 12", badge: "geo", duration: "520ms", detail: "Tower fix refined with shared location pin; 42m radius. Matched active SDRF flood zone SNG-FLD-03.", status: "done" },
       { time: "00:04.1", action: "SDRF team alerted — Zone SNG-FLD-03", badge: "dispatch", duration: "—", detail: "Boat team Bravo notified. ETA 8 min. Upstream water level rising 2cm/hr.", status: "active" },
       { time: "—", action: "Translation bridge open — caller ↔ SDRF", badge: "bridge", duration: "—", detail: "Live Telugu ↔ Marathi. Streaming bidirectional.", status: "active" },
       { time: "—", action: "Awaiting rescue confirmation", badge: "resolve", duration: "—", detail: "Pending SDRF on-site confirmation.", status: "pending" },
@@ -167,7 +167,7 @@ export const CASES: CrisisCase[] = [
     translit: "Majhya navaryala chatit khup dukhatay, shwas gheta yet nahi",
     location: "Viman Nagar, Pune",
     coords: "18.57, 73.91",
-    channel: "WHATSAPP",
+    channel: "TELEGRAM",
     timestamp: "05:02",
     time: "14:39",
     status: "AMB EN ROUTE",
@@ -178,7 +178,7 @@ export const CASES: CrisisCase[] = [
     tags: ["CHEST PAIN", "DYSPNEA", "MALE 55+"],
     slaMinutes: 6,
     timeline: [
-      { time: "00:00.0", action: "WhatsApp voice note received", badge: "ingest", duration: "—", detail: "Audio 18s, Marathi detected. Auto-transcription initiated.", status: "done" },
+      { time: "00:00.0", action: "Telegram voice note received", badge: "ingest", duration: "—", detail: "Audio 18s, Marathi detected. Auto-transcription initiated.", status: "done" },
       { time: "00:00.3", action: "Language identified: Marathi (mr-IN)", badge: "lang-id", duration: "280ms", detail: "Confidence 0.98. Native Devanagari pipeline locked.", status: "done" },
       { time: "00:01.1", action: "Transcription complete", badge: "asr", duration: "380ms", detail: "ASR confidence 0.97. Medical keywords flagged: छातीत दुखतंय, श्वास.", status: "done" },
       { time: "00:02.0", action: "Classified MEDICAL · CRITICAL", badge: "classify", duration: "210ms", detail: "Chest pain + breathing difficulty → cardiac protocol triggered.", status: "done" },
@@ -234,7 +234,7 @@ export const CASES: CrisisCase[] = [
     translit: "Aaila taap aala aahe, thodi ashaktpana janavtoy",
     location: "Deccan Gymkhana, Pune",
     coords: "18.52, 73.84",
-    channel: "WHATSAPP",
+    channel: "TELEGRAM",
     timestamp: "11:26",
     time: "14:52",
     status: "TRIAGE",
@@ -245,7 +245,7 @@ export const CASES: CrisisCase[] = [
     tags: ["FEVER", "NON-URGENT", "ELDERLY"],
     slaMinutes: 25,
     timeline: [
-      { time: "00:00.0", action: "WhatsApp text message received", badge: "ingest", duration: "—", detail: "Marathi text, no audio. Follow-up questions sent to caller.", status: "done" },
+      { time: "00:00.0", action: "Telegram text message received", badge: "ingest", duration: "—", detail: "Marathi text, no audio. Follow-up questions sent to caller.", status: "done" },
       { time: "00:00.3", action: "Language identified: Marathi (mr-IN)", badge: "lang-id", duration: "220ms", detail: "Confidence 0.94. Text-only mr→en pipeline.", status: "done" },
       { time: "00:01.0", action: "Segment translated mr → en", badge: "translate", duration: "260ms", detail: "\"Mother has a fever, feeling a bit weak.\"", status: "done" },
       { time: "00:01.4", action: "Classified MEDICAL · MEDIUM", badge: "classify", duration: "160ms", detail: "No red-flag symptoms detected. Routed to nurse triage line.", status: "done" },
@@ -290,7 +290,7 @@ export const CASES: CrisisCase[] = [
     translit: "Aama gaanku pani gheri sarichi, rasta bandha hoigala",
     location: "Balasore, Odisha",
     coords: "21.49, 86.93",
-    channel: "WHATSAPP",
+    channel: "SMS",
     timestamp: "16:33",
     time: "15:08",
     status: "MONITORING",
@@ -299,7 +299,7 @@ export const CASES: CrisisCase[] = [
     tags: ["VILLAGE", "ROAD CLOSED", "MULTIPLE AFFECTED"],
     slaMinutes: 30,
     timeline: [
-      { time: "00:00.0", action: "WhatsApp message received", badge: "ingest", duration: "—", detail: "Odia text + location pin shared.", status: "done" },
+      { time: "00:00.0", action: "SMS received", badge: "ingest", duration: "—", detail: "Odia text; location given as a village name and resolved by geocode.", status: "done" },
       { time: "00:00.3", action: "Language identified: Odia (or-IN)", badge: "lang-id", duration: "250ms", detail: "Confidence 0.95. Odia pipeline activated.", status: "done" },
       { time: "00:01.2", action: "Classified FLOOD · MEDIUM", badge: "classify", duration: "180ms", detail: "Road closure, no immediate life threat reported.", status: "done" },
       { time: "00:01.8", action: "NDRF monitoring activated", badge: "dispatch", duration: "—", detail: "Added to Balasore flood watch list. Hourly check-in scheduled.", status: "active" },
@@ -342,7 +342,7 @@ export const CASES: CrisisCase[] = [
     translit: "Dawa ki dukaan kahaan khuli milegi, bukhar hai",
     location: "Kondhwa, Pune",
     coords: "18.46, 73.89",
-    channel: "WHATSAPP",
+    channel: "SMS",
     timestamp: "22:47",
     time: "15:22",
     status: "ROUTED 104",
@@ -353,7 +353,7 @@ export const CASES: CrisisCase[] = [
     tags: ["NON-EMERGENCY", "ROUTED 104"],
     slaMinutes: 45,
     timeline: [
-      { time: "00:00.0", action: "WhatsApp text message received", badge: "ingest", duration: "—", detail: "Hindi text query, no distress markers detected.", status: "done" },
+      { time: "00:00.0", action: "SMS received", badge: "ingest", duration: "—", detail: "Hindi text query, no distress markers detected.", status: "done" },
       { time: "00:00.2", action: "Language identified: Hindi (hi-IN)", badge: "lang-id", duration: "160ms", detail: "Confidence 0.98. Text-only hi→en pipeline.", status: "done" },
       { time: "00:00.7", action: "Segment translated hi → en", badge: "translate", duration: "150ms", detail: "\"Where can I find an open pharmacy, there is fever.\"", status: "done" },
       { time: "00:01.0", action: "Classified MEDICAL · LOW", badge: "classify", duration: "140ms", detail: "No emergency indicators. Identified as pharmacy locator query.", status: "done" },
