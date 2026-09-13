@@ -67,15 +67,6 @@ export type TimelineEvent = {
   status: "done" | "active" | "pending";
 };
 
-export type PipelineNode = {
-  id: string;
-  label: string;
-  sponsor: string;
-  iconName: string;
-  status: "done" | "processing" | "waiting" | "error";
-  time?: string;
-  detail?: string;
-};
 
 export type ChatMessage = {
   role: "bot" | "user";
@@ -362,33 +353,7 @@ export const CASES: CrisisCase[] = [
   },
 ];
 
-export const PIPELINE_NODES: PipelineNode[] = [
-  // Row 1 — ingest and understanding. Every sponsor named here is actually
-  // called at runtime; the earlier list credited Sarvam AI and Trigger.dev,
-  // neither of which this system uses.
-  { id: "ingest", label: "Multi-Channel Ingest", sponsor: "Telegram · SMS · Vobiz", iconName: "phone-incoming", status: "done", time: "0.1s", detail: "5 CHANNELS" },
-  { id: "stt", label: "Speech → Text", sponsor: "OpenAI gpt-4o-transcribe", iconName: "mic", status: "done", time: "1.8s" },
-  { id: "vision", label: "Scene Analysis", sponsor: "OpenAI gpt-4o vision", iconName: "brain", status: "done", time: "2.4s" },
-  { id: "translate", label: "Detect & Translate", sponsor: "OpenAI gpt-4o-mini", iconName: "languages", status: "done", time: "0.6s", detail: "15 LANGS" },
 
-  // Row 2 — triage, enrichment and the operator surface.
-  { id: "triage", label: "Triage & Severity", sponsor: "OpenAI gpt-4o-mini", iconName: "git-branch", status: "processing", time: "0.5s", detail: "SLA SET" },
-  { id: "geo", label: "Location & Weather", sponsor: "Nominatim · wttr.in", iconName: "map-pin", status: "done", time: "0.5s" },
-  { id: "news", label: "Disaster News Watch", sponsor: "Exa", iconName: "phone-call", status: "done", time: "1.2s" },
-  { id: "console", label: "Operator Console", sponsor: "CopilotKit · Ambiguous AI", iconName: "layout-dashboard", status: "processing", detail: "LIVE" },
-];
-
-export const SPONSORS = [
-  { name: "OpenAI", role: "Brain", color: "#10A37F" },
-  { name: "Ambiguous AI", role: "Coordination", color: "#7C3AED" },
-  { name: "CopilotKit", role: "Dashboard", color: "#3B82F6" },
-  { name: "Exa", role: "Search", color: "#F59E0B" },
-  { name: "OpenRouter", role: "Failover", color: "#EF4444" },
-  { name: "Trigger.dev", role: "Pipeline", color: "#8B5CF6" },
-  { name: "Auth0", role: "Auth", color: "#EB5424" },
-  { name: "Mozilla", role: "Offline", color: "#FF7139" },
-  { name: "Google Cloud", role: "Deploy", color: "#4285F4" },
-];
 
 export const COPILOT_CHAT: ChatMessage[] = [
   {

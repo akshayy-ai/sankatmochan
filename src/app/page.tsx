@@ -37,7 +37,7 @@ export default function Home() {
       />
       <GenerativeUI />
 
-      <Header view={view} onViewChange={setView} />
+      <Header view={view} onViewChange={setView} cases={allCases} />
 
       {/* Live regional picture, above the queue but outside it — an operator
           should see a flood unfolding upstream before the calls arrive. */}
@@ -57,7 +57,7 @@ export default function Home() {
           </>
         ) : view === "pipeline" ? (
           <div className="flex-1 min-h-0">
-            <AgentCanvas />
+            <AgentCanvas cases={allCases} />
           </div>
         ) : view === "voice" ? (
           <div className="flex-1 flex min-h-0">

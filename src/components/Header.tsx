@@ -1,6 +1,6 @@
 "use client";
 
-import { CASES } from "@/data/mock";
+import type { CrisisCase } from "@/data/mock";
 import { useEffect, useState } from "react";
 import UserMenu from "./UserMenu";
 
@@ -9,6 +9,14 @@ export type ViewKey = "console" | "pipeline" | "bridge" | "voice";
 type Props = {
   view: ViewKey;
   onViewChange: (v: ViewKey) => void;
+  /**
+   * The same list the sidebar renders, live cases included.
+   *
+   * These counters used to read the seeded CASES array directly, so they
+   * ignored every live case and contradicted the queue sitting directly
+   * beneath them — and the gap widened with each new case that arrived.
+   */
+  cases: CrisisCase[];
 };
 
 const TABS: { key: ViewKey; label: string; shortcut: string; planned?: boolean }[] = [
@@ -19,10 +27,14 @@ const TABS: { key: ViewKey; label: string; shortcut: string; planned?: boolean }
   { key: "voice", label: "📞 Voice", shortcut: "4" },
 ];
 
-export default function Header({ view, onViewChange }: Props) {
-  const critCount = CASES.filter((c) => c.severity === "CRITICAL").length;
-  const openCount = CASES.length;
-  const unclaimedCount = CASES.filter((c) => !(c as any).owner).length;
+export default function Header({ view, onViewChange, cases }: Props) {
+  // Counted over exactly what the sidebar renders. These must agree: they sit
+  // inches apart on screen, and a mismatch is what an operator notices first.
+  // An operator who claimed a case in this session owns it just as much as one
+  // seeded with an owner, so both fields count.
+  const critCount = cases.filter((c) => c.severity === "CRITICAL").length;
+  const openCount = cases.length;
+  const unclaimedCount = cases.filter((c) => !c.owner && !c.claimedBy).length;
   const [clock, setClock] = useState("");
 
   useEffect(() => {
