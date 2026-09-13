@@ -250,6 +250,6 @@ AI Tinkerers, OpenAI, CopilotKit, Exa, Auth0, Ambiguous AI
 - [x] Project description
 - [x] Products/tools ticked (6 boxes + Other)
 - [x] Team contributions — all four members filled in
-- [ ] Social post published, URL pasted back into the form
+- [x] Social post published, URL pasted back into the form
 - [x] Video — https://youtu.be/d4DqKCsSLXA (unlisted, 2:32)
 - [x] Additional links
