@@ -468,6 +468,41 @@ export default function CaseDetail({ caseId }: Props) {
         </div>
       </div>
 
+      {/* ── Dispatch record ── */}
+      {(c.dispatched?.length ?? 0) > 0 && (
+        <div
+          className="flex-none flex items-center gap-3 px-5 py-[7px] border-t border-border flex-wrap"
+          style={{ background: "#0B0E13" }}
+        >
+          <span className="text-[8.5px] tracking-[.12em]" style={{ color: "#3FD9C8" }}>
+            DISPATCHED
+          </span>
+          {c.dispatched!.map((d) => (
+            <span
+              key={d.agency}
+              className="text-[9.5px] px-[8px] py-[3px] rounded flex items-center gap-[6px]"
+              style={{ background: "#0F2C29", border: "1px solid #2C9C90", color: "#3FD9C8" }}
+              title={d.taskId ? `Ambiguous workspace task ${d.taskId}` : undefined}
+            >
+              <span>{agencyLabel(d.agency as Agency)}</span>
+              <span style={{ color: "#2C9C90" }}>
+                {new Date(d.at).toLocaleTimeString("en-IN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                  timeZone: "Asia/Kolkata",
+                })}
+              </span>
+            </span>
+          ))}
+          {/* Named so it is obvious where the task actually lives, and so a
+              reload cannot make a sent dispatch look unsent. */}
+          <span className="text-[8.5px]" style={{ color: "#4E5A6B" }}>
+            tracked in Ambiguous AI workspace
+          </span>
+        </div>
+      )}
+
       {/* ── Nearest responding units ── */}
       {facilities.some((f) => f.etaMin) && (
         <div
@@ -504,7 +539,10 @@ export default function CaseDetail({ caseId }: Props) {
       {/* ── Bottom action bar ── */}
       <div className="flex-none flex items-center gap-2 px-5 py-[10px] border-t border-border" style={{ background: "#0B0E13" }}>
         {recommended.map((r) => {
-          const st = sent[r.agency];
+          // Local state covers the moment of clicking; the case covers
+          // everything after a reload.
+          const already = c.dispatched?.find((d) => d.agency === r.agency);
+          const st = sent[r.agency] ?? (already ? "sent" : undefined);
           const dot =
             r.agency === "POLICE" ? "#5B8CFF" :
             r.agency === "HOSPITAL" ? "#F2544F" :

@@ -10,6 +10,7 @@
  * provisioned "Sankatmochan Dispatch" agent identity.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { recordDispatch } from "@/lib/caseStore";
 
 const API = process.env.AMBIGUOUS_API_URL ?? "https://api.ambiguous.ai";
 const KEY = process.env.AMBIGUOUS_API_KEY ?? "";
@@ -140,9 +141,15 @@ export async function POST(req: NextRequest) {
       console.warn("[dispatch] Mail send failed:", mailErr);
     }
 
+    // Recorded on the case, not just returned to the browser: an operator who
+    // reloads, or a second one opening the same incident, has to see what has
+    // already gone out or the same unit gets sent twice.
+    const taskId = task.id ?? task.task?.id;
+    if (caseId) recordDispatch(caseId, agency, taskId);
+
     return NextResponse.json({
       status: "DISPATCHED",
-      taskId: task.id ?? task.task?.id,
+      taskId,
       taskTitle: task.title ?? task.task?.title,
       agency,
       contact: contact.name,

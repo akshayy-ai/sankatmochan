@@ -31,6 +31,7 @@ type TelegramCase = {
   callerNumber?: string;
   cluster?: { id: string; size: number; major: boolean };
   attention?: string[];
+  dispatched?: { agency: string; at: string; taskId?: string }[];
 };
 
 const LANG_CODE: Record<string, string> = {
@@ -216,6 +217,7 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
     isLive: true,
     cluster: t.cluster,
     attention: t.attention,
+    dispatched: t.dispatched,
   };
 }
 

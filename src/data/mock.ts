@@ -26,6 +26,8 @@ export type CrisisCase = {
   cluster?: { id: string; size: number; major: boolean };
   /** Operator-visible flags: unread media, failed analysis, silence. */
   attention?: string[];
+  /** Agencies already notified, so a reload does not invite a double dispatch. */
+  dispatched?: { agency: string; at: string; taskId?: string }[];
   timestamp: string;
   time: string;
   status: string; // "BRIDGE OPEN", "AMB EN ROUTE", "FIRE DISPATCHED", "TRIAGE", "MONITORING"

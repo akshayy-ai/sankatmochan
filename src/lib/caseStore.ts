@@ -46,6 +46,15 @@ export type LiveCase = {
   resolvedByOperator?: boolean;
   /** An operator looked at the flags and judged this not an emergency. */
   reviewedByOperator?: boolean;
+  /**
+   * Agencies already notified, with the workspace task each created.
+   *
+   * Stored on the case rather than held in the browser: an operator who
+   * reloads, or a second operator opening the same incident, must be able to
+   * see what has already gone out. Otherwise the same unit is dispatched
+   * twice while another scene waits.
+   */
+  dispatched?: { agency: string; at: string; taskId?: string }[];
 };
 
 /** One exchange within a case — a caller utterance, an agent line, or a system note. */
@@ -239,6 +248,21 @@ export function dismissFlags(caseId: string): boolean {
   c.reviewedByOperator = true;
   c.attention = [];
   appendTurn(caseId, { kind: "SYSTEM", text: "Flags cleared by operator — reviewed, not an emergency" });
+  saveCase(c);
+  return true;
+}
+
+/** Record that an agency has been notified. Idempotent per agency. */
+export function recordDispatch(caseId: string, agency: string, taskId?: string): boolean {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return false;
+  c.dispatched = c.dispatched || [];
+  if (c.dispatched.some((d) => d.agency === agency)) return true;
+  c.dispatched.push({ agency, at: new Date().toISOString(), taskId });
+  appendTurn(caseId, {
+    kind: "SYSTEM",
+    text: `${agency} notified${taskId ? ` — workspace task ${taskId.slice(0, 8)}` : ""}`,
+  });
   saveCase(c);
   return true;
 }
