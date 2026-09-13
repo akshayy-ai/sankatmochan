@@ -106,7 +106,7 @@ silently break ingest.
 HONEST SCOPE
 
 Cases survive a restart — SQLite write-through on a Docker volume, verified by
-restoring 19 cases on the live box. What this is not: it runs as a single
+restoring 28 cases on the live box after a rebuild. What this is not: it runs as a single
 instance, so there is no failover; outbound SMS needs gateway credentials we
 do not have; Auth0 is wired but runs in pass-through demo mode; and the
 operator-to-caller translation bridge is designed, not built. Nothing here
