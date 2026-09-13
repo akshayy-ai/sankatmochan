@@ -145,7 +145,11 @@ export async function POST() {
             tool_choice: "auto",
             audio: {
               input: {
-                transcription: { model: "whisper-1" },
+                // Same swap made on the Telegram voice path: measured on
+                // identical Hindi audio, whisper-1 rendered "आग" (fire) as
+                // "आत" — a non-word, and the one the triage turns on. No
+                // language is pinned; the caller's is detected.
+                transcription: { model: "gpt-4o-transcribe" },
               },
               output: { voice: "coral" },
             },
