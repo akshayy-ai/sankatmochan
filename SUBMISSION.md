@@ -66,7 +66,15 @@ voice console.
 CopilotKit gives the operator an agent-native surface inside the console, with
 shared case context and generative UI rather than a bolted-on chat panel. Exa
 monitors live Indian disaster news so the console knows about a flood before the
-calls arrive. Ambiguous AI handles dispatch workspace tasks and acknowledgements.
+calls arrive.
+
+Ambiguous AI is a two-way channel. A confirmed dispatch creates a workspace task,
+and /api/dispatch/status reads the acknowledgement back onto the case — so a
+request nobody has opened stops looking like a unit already on the road.
+Separately, the SLA sweeper files its own supervisor escalation into the
+workspace on a 30-second timer with no operator present: the agent writes there
+on its own initiative, not only when a human clicks.
+
 Auth0 is installed and a themed operator sign-in page exists, though the console
 currently runs in pass-through demo mode. Leaflet with OpenStreetMap renders
 incidents; Nominatim and wttr.in add free reverse-geocoding and weather with no
