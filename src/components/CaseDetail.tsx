@@ -9,7 +9,7 @@ import {
   priorityFor,
   type Agency,
 } from "@/lib/dispatchRouting";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAllCases } from "@/hooks/useTelegramCases";
 import IncidentMap from "./IncidentMap";
 
@@ -60,6 +60,31 @@ export default function CaseDetail({ caseId }: Props) {
   const recommended = recommendAgencies(c.category, c.severity);
   const [sent, setSent] = useState<Record<string, "sending" | "sent" | "failed">>({});
 
+  // Nearest real stations from OpenStreetMap, so a dispatch names WHICH one.
+  type Facility = { type: string; name: string; km: number; phone?: string };
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  useEffect(() => {
+    const [lat, lng] = c.coords.split(",").map((v) => parseFloat(v.trim()));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    let live = true;
+    fetch(`/api/facilities?lat=${lat}&lng=${lng}`)
+      .then((r) => r.json())
+      .then((d) => { if (live) setFacilities(d.facilities || []); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [c.coords]);
+
+  const OSM_TYPE: Record<string, string> = {
+    POLICE: "police",
+    FIRE: "fire_station",
+    HOSPITAL: "hospital",
+  };
+  /** Closest facility matching an agency, if OSM knows one. */
+  function nearestFor(agency: string): Facility | undefined {
+    const t = OSM_TYPE[agency];
+    return t ? facilities.find((f) => f.type === t) : undefined;
+  }
+
   async function dispatchTo(agency: Agency, reason: string) {
     setSent((p) => ({ ...p, [agency]: "sending" }));
     try {
@@ -75,6 +100,9 @@ export default function CaseDetail({ caseId }: Props) {
           location: geo?.short || c.location,
           language: c.lang,
           caseDetails: c.englishText,
+          nearestFacility: nearestFor(agency)
+            ? `${nearestFor(agency)!.name} (${nearestFor(agency)!.km} km)`
+            : undefined,
         }),
       });
       setSent((p) => ({ ...p, [agency]: res.ok ? "sent" : "failed" }));
@@ -372,6 +400,11 @@ export default function CaseDetail({ caseId }: Props) {
                  st === "failed" ? "RETRY" :
                  r.primary ? priorityFor(c.severity) : "ALSO"}
               </span>
+              {nearestFor(r.agency) && (
+                <span className="text-[8.5px]" style={{ color: "#6E7A8C" }}>
+                  · {nearestFor(r.agency)!.km}km
+                </span>
+              )}
             </button>
           );
         })}

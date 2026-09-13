@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
       severity,
       location,
       language,
+      nearestFacility,
     } = await req.json();
 
     if (!KEY) {
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest) {
         `**Severity**: ${severity}`,
         `**Agency**: ${agency} (${contact.name})`,
         `**Location**: ${location ?? "See case details"}`,
+        ...(nearestFacility ? [`**Nearest unit**: ${nearestFacility}`] : []),
         `**Language**: ${language ?? "Unknown"}`,
         `**Reason**: ${reason}`,
         `**Details**: ${caseDetails}`,
