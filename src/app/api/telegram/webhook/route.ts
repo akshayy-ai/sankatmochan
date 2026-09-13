@@ -16,6 +16,7 @@ import {
   type LiveCase,
 } from "@/lib/caseStore";
 import { clusterCases } from "@/lib/clustering";
+import { assessCredibility } from "@/lib/credibility";
 
 /**
  * Telegram Bot Webhook — receives text, voice, AND image emergency messages
@@ -49,8 +50,15 @@ export async function GET() {
     }
   }
 
+  const withCluster = cases.map((c) => ({ ...c, cluster: byCase.get(c.id) }));
+
   return NextResponse.json({
-    cases: cases.map((c) => ({ ...c, cluster: byCase.get(c.id) })),
+    // Credibility is attached AFTER clustering, because corroboration by other
+    // callers is the only strong positive signal it uses.
+    cases: withCluster.map((c) => ({
+      ...c,
+      credibility: assessCredibility(c, withCluster),
+    })),
     count: cases.length,
     clusters,
   });

@@ -250,6 +250,35 @@ export default function CaseDetail({ caseId }: Props) {
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto min-h-0 px-5 pt-[14px] pb-6">
+        {/* Caller context — advisory only. This never hides, reorders or
+            downgrades a case; it tells an operator what a previous operator
+            already decided about this sender, and nothing more. */}
+        {c.credibility && c.credibility.level !== "normal" && (
+          <div
+            className="mb-4 rounded-[5px] p-[12px]"
+            style={{
+              border: `1px solid ${c.credibility.level === "corroborated" ? "#1A3D2D" : "#2A3644"}`,
+              background: c.credibility.level === "corroborated" ? "#0C1A14" : "#0D1117",
+            }}
+          >
+            <div className="flex items-center gap-[9px] mb-[5px]">
+              <span
+                className="w-[5px] h-[5px] rounded-full"
+                style={{ background: c.credibility.level === "corroborated" ? "#3FD9C8" : "#8A95A6" }}
+              />
+              <span
+                className="text-[9px] font-semibold tracking-[.12em]"
+                style={{ color: c.credibility.level === "corroborated" ? "#3FD9C8" : "#8A95A6" }}
+              >
+                {c.credibility.level === "corroborated" ? "CORROBORATED" : "CALLER HISTORY"}
+              </span>
+            </div>
+            <div className="text-[11.5px] font-sans leading-relaxed" style={{ color: "#C3CCD8", maxWidth: "84ch" }}>
+              {c.credibility.note}
+            </div>
+          </div>
+        )}
+
         {/* Review flags — why this case wants a human look, and one click to
             say it does not. */}
         {!dismissed && (c.attention?.length ?? 0) > 0 && (

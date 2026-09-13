@@ -32,6 +32,7 @@ type TelegramCase = {
   cluster?: { id: string; size: number; major: boolean };
   attention?: string[];
   dispatched?: { agency: string; at: string; taskId?: string }[];
+  credibility?: { level: string; note?: string; priorDismissals?: number };
 };
 
 const LANG_CODE: Record<string, string> = {
@@ -218,6 +219,7 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
     cluster: t.cluster,
     attention: t.attention,
     dispatched: t.dispatched,
+    credibility: t.credibility,
   };
 }
 

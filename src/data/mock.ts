@@ -28,6 +28,8 @@ export type CrisisCase = {
   attention?: string[];
   /** Agencies already notified, so a reload does not invite a double dispatch. */
   dispatched?: { agency: string; at: string; taskId?: string }[];
+  /** Advisory context for the operator. Never gates or hides anything. */
+  credibility?: { level: string; note?: string; priorDismissals?: number };
   timestamp: string;
   time: string;
   status: string; // "BRIDGE OPEN", "AMB EN ROUTE", "FIRE DISPATCHED", "TRIAGE", "MONITORING"
