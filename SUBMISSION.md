@@ -131,25 +131,29 @@ severity classification, gpt-4o vision for emergency photo analysis, and
 gpt-4o-transcribe for speech (benchmarked against whisper-1 on Hindi audio and
 switched after measuring a materially better result). Integrated CopilotKit for
 the in-console operator copilot with shared case context and generative UI.
-Built the Telegram Bot API integration across text, voice and photo, the SMS
-ingest path, and the Vobiz telephony flow for inbound 112 calls. Built the
-operator console UI: live SLA countdowns, Leaflet incident maps, and live
-reverse-geocoding and weather enrichment.
+Built the Telegram Bot API integration across text, voice, photo and location,
+and the shared case store every channel writes into — including multi-turn
+conversation state, call-storm clustering, the server-side SLA monitor and
+SQLite persistence. Built the operator console UI: live SLA countdowns, Leaflet
+incident maps, and live reverse-geocoding and weather enrichment.
 ```
 
 **Rohit Darekar (Member)**
 ```
-Deployment and infrastructure. Provided and administered the self-hosted server,
-set up the Cloudflare named tunnel and domain that make the deployment publicly
-reachable from behind NAT, and supported the Dockerised rollout.
+SMS and telephony channels — the two paths that reach a caller with no
+smartphone and no data. Built the inbound SMS ingest over SMS Gateway for
+Android, and the Vobiz voice flow for inbound 112 calls: the Answer and Gather
+webhooks, the spoken prompts, and the DTMF fallback for a caller who cannot
+safely speak. Also provided the domain the deployment is served on.
 ```
 
 **Nishant Bagul (Member)**
 ```
-Server setup and deployment. Worked on containerising the application and
-bringing up the Docker Compose stack that runs the console, the tunnel and the
-webhook registrar as one unit, so a reboot brings the whole service back without
-manual steps.
+Deployment and infrastructure. Containerised the application and built the
+Docker Compose stack that runs the console, the Cloudflare named tunnel and the
+webhook registrar as one unit — making the service publicly reachable from
+behind NAT, and restart-safe, so a reboot brings everything back and re-points
+the Telegram webhook without manual steps.
 ```
 
 **Rishikesh Ombase (Member)**
