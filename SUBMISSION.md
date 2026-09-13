@@ -246,10 +246,10 @@ AI Tinkerers, OpenAI, CopilotKit, Exa, Auth0, Ambiguous AI
 
 ## Submission Checklist
 
-- [ ] Project name
-- [ ] Project description
-- [ ] Products/tools ticked (6 boxes + Other)
-- [ ] Team contributions — **replace the two placeholders first**
+- [x] Project name
+- [x] Project description
+- [x] Products/tools ticked (6 boxes + Other)
+- [x] Team contributions — all four members filled in
 - [ ] Social post published, URL pasted back into the form
 - [x] Video — https://youtu.be/d4DqKCsSLXA (unlisted, 2:32)
-- [ ] Additional links
+- [x] Additional links
