@@ -3,6 +3,13 @@
 import { CASES, type CrisisCase } from "@/data/mock";
 import { useSlaTimer } from "@/hooks/useSlaTimer";
 import { useGeocode, useWeather } from "@/hooks/useLiveData";
+import {
+  recommendAgencies,
+  agencyLabel,
+  priorityFor,
+  type Agency,
+} from "@/lib/dispatchRouting";
+import { useState } from "react";
 import { useAllCases } from "@/hooks/useTelegramCases";
 import IncidentMap from "./IncidentMap";
 
@@ -47,6 +54,34 @@ export default function CaseDetail({ caseId }: Props) {
   const sla = useSlaTimer(c.id, c.slaMinutes);
   const { geo } = useGeocode(c.coords);
   const { weather } = useWeather(c.coords);
+
+  // Which agencies this case needs, derived from its own category and
+  // severity rather than a fixed row of buttons that ignored the case.
+  const recommended = recommendAgencies(c.category, c.severity);
+  const [sent, setSent] = useState<Record<string, "sending" | "sent" | "failed">>({});
+
+  async function dispatchTo(agency: Agency, reason: string) {
+    setSent((p) => ({ ...p, [agency]: "sending" }));
+    try {
+      const res = await fetch("/api/dispatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseId: c.id,
+          agency,
+          reason,
+          priority: priorityFor(c.severity),
+          severity: c.severity,
+          location: geo?.short || c.location,
+          language: c.lang,
+          caseDetails: c.englishText,
+        }),
+      });
+      setSent((p) => ({ ...p, [agency]: res.ok ? "sent" : "failed" }));
+    } catch {
+      setSent((p) => ({ ...p, [agency]: "failed" }));
+    }
+  }
 
   return (
     <div className="h-full flex flex-col font-mono overflow-hidden" style={{ background: "#08090C" }}>
@@ -309,28 +344,44 @@ export default function CaseDetail({ caseId }: Props) {
 
       {/* ── Bottom action bar ── */}
       <div className="flex-none flex items-center gap-2 px-5 py-[10px] border-t border-border" style={{ background: "#0B0E13" }}>
-        {[
-          { label: "Police", dot: "#5B8CFF", key: "P" },
-          { label: "Ambulance", dot: "#F2544F", key: "M" },
-          { label: "Fire", dot: "#E8A33D", key: "F" },
-        ].map((btn) => (
-          <button
-            key={btn.label}
-            className="flex items-center gap-[7px] px-[13px] py-2 rounded text-[10.5px] font-medium font-sans cursor-pointer transition-colors hover:bg-[#1B2430]"
-            style={{ border: "1px solid #2A3644", background: "#141B25", color: "#E6EAF0" }}
-          >
-            <span className="w-[5px] h-[5px] rounded-full" style={{ background: btn.dot }} />
-            {btn.label}
-            <span className="text-[8.5px]" style={{ color: "#5A6575" }}>{btn.key}</span>
-          </button>
-        ))}
+        {recommended.map((r) => {
+          const st = sent[r.agency];
+          const dot =
+            r.agency === "POLICE" ? "#5B8CFF" :
+            r.agency === "HOSPITAL" ? "#F2544F" :
+            r.agency === "FIRE" ? "#E8A33D" : "#3FD9C8";
+          return (
+            <button
+              key={r.agency}
+              onClick={() => dispatchTo(r.agency, r.reason)}
+              disabled={st === "sending" || st === "sent"}
+              title={r.reason}
+              className="flex items-center gap-[7px] px-[13px] py-2 rounded text-[10.5px] font-medium font-sans cursor-pointer transition-colors hover:bg-[#1B2430] disabled:cursor-default"
+              style={{
+                border: `1px solid ${st === "sent" ? "#2C9C90" : r.primary ? "#3A4757" : "#2A3644"}`,
+                background: st === "sent" ? "#0F2C29" : "#141B25",
+                color: st === "sent" ? "#3FD9C8" : "#E6EAF0",
+                opacity: r.primary || st ? 1 : 0.72,
+              }}
+            >
+              <span className="w-[5px] h-[5px] rounded-full" style={{ background: dot }} />
+              {agencyLabel(r.agency)}
+              <span className="text-[8.5px]" style={{ color: "#5A6575" }}>
+                {st === "sending" ? "…" :
+                 st === "sent" ? "NOTIFIED" :
+                 st === "failed" ? "RETRY" :
+                 r.primary ? priorityFor(c.severity) : "ALSO"}
+              </span>
+            </button>
+          );
+        })}
         <span className="flex-1" />
         <button
           className="flex items-center gap-[7px] px-[13px] py-2 rounded text-[10.5px] font-semibold font-sans cursor-pointer hover:opacity-90"
           style={{ border: "1px solid #3FD9C8", background: "#0F2C29", color: "#3FD9C8" }}
         >
           Open bridge
-          <span className="text-[8.5px]" style={{ color: "#2C9C90" }}>B</span>
+          <span className="text-[8.5px]" style={{ color: "#2C9C90" }}>PLANNED</span>
         </button>
         <button
           className="px-[13px] py-2 rounded text-[10.5px] font-medium font-sans cursor-pointer hover:bg-[#2A1416]"
