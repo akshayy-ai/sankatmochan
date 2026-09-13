@@ -37,11 +37,17 @@ export type LiveCase = {
   /** Last time this incident saw any activity, for continuation routing. */
   lastTurnAt?: number;
   /**
-   * The caller said they are fine. Advisory only — the case stays OPEN and
-   * visible. A confused caller, or an abuser who grabs the phone during a DV
-   * report, must not be able to erase a live incident from the queue.
+   * The caller said they are fine.
+   *
+   * This ends the THREAD, not the case. The incident stops being the default
+   * destination for that chat's next message, so a later "hi" opens something
+   * new instead of silently landing on a fire from an hour ago. The case stays
+   * OPEN and fully visible in the queue — a confused caller, or an abuser who
+   * grabs the phone during a DV report, must never be able to erase a live
+   * incident. Only an operator resolves.
    */
   callerSaysResolved?: boolean;
+  callerClosedAt?: number;
   /** Closed by an operator. Only an operator may set this. */
   resolvedByOperator?: boolean;
   /** An operator looked at the flags and judged this not an emergency. */
@@ -227,6 +233,9 @@ export function openIncidentFor(chatId: number): LiveCase | undefined {
     (c) =>
       c.chatId === chatId &&
       !c.resolvedByOperator &&
+      // A caller who said they were done gets a fresh thread next time. The
+      // case itself stays in the queue for an operator to close properly.
+      !c.callerClosedAt &&
       now - (c.lastTurnAt ?? 0) < INCIDENT_TTL_MS
   );
 }
@@ -339,6 +348,20 @@ export function addNote(caseId: string, operator: string, text: string): boolean
   c.notes = c.notes || [];
   c.notes.push({ by: operator, at: new Date().toISOString(), text: trimmed.slice(0, 1000) });
   appendTurn(caseId, { kind: "SYSTEM", text: `Note by ${operator}: ${trimmed.slice(0, 120)}` });
+  saveCase(c);
+  return true;
+}
+
+/** The caller says they are finished. Ends the thread, never the case. */
+export function callerCloseThread(caseId: string): boolean {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return false;
+  c.callerSaysResolved = true;
+  c.callerClosedAt = Date.now();
+  appendTurn(caseId, {
+    kind: "SYSTEM",
+    text: "Caller said the situation is resolved — thread closed, case still open for an operator",
+  });
   saveCase(c);
   return true;
 }

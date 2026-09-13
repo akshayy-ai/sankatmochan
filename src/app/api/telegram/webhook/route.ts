@@ -13,6 +13,7 @@ import {
   getLastLocation,
   backfillLocation,
   touchCase,
+  callerCloseThread,
   type LiveCase,
 } from "@/lib/caseStore";
 import { clusterCases } from "@/lib/clustering";
@@ -140,6 +141,44 @@ function rawTextOf(m: TelegramMessage): string {
   return "[unsupported message]";
 }
 
+/**
+ * Does this message mean "I'm finished"?
+ *
+ * Anchored to the whole message on purpose. A caller writing "the fire is done
+ * spreading" or "we closed the door" must not close a live incident — only a
+ * message that is ITSELF a sign-off counts. Covers the slash commands too, for
+ * anyone who tries them.
+ *
+ * Nothing here ends the case; it ends the thread, so the next message opens a
+ * new incident instead of landing on an hour-old fire.
+ */
+const CLOSE_PHRASES = [
+  // English
+  "done", "all done", "close", "closed", "close it", "close all", "close all done",
+  "finished", "resolved", "sorted", "ok done", "okay done", "thats all", "that's all",
+  "no more", "nothing else", "im fine", "i'm fine", "we are fine", "we're fine",
+  "all good", "help arrived", "thank you bye", "bye",
+  // Hindi / Marathi
+  "ठीक है", "हो गया", "सब ठीक है", "बंद करो", "धन्यवाद", "बस", "अब ठीक है",
+  "झालं", "बस्स", "ठीक आहे",
+  // Common visitor languages
+  "listo", "ya está", "gracias adiós", "terminé",
+  "c'est bon", "terminé merci", "fini",
+  "終わりました", "大丈夫です", "解決しました",
+  "erledigt", "alles gut",
+  "تم", "انتهى", "شكرا مع السلامة",
+];
+
+function isClosePhrase(text: string): boolean {
+  const t = text
+    .toLowerCase()
+    .replace(/^\/+/, "")
+    .replace(/[!.,。！？?]+$/g, "")
+    .trim();
+  if (!t || t.length > 24) return false;
+  return CLOSE_PHRASES.includes(t);
+}
+
 function mediaIdOf(m: TelegramMessage): string | undefined {
   return (
     m.voice?.file_id || m.audio?.file_id ||
@@ -174,6 +213,24 @@ async function processMessage(message: TelegramMessage) {
     const kind = classifyKind(message);
     const raw = rawTextOf(message);
     const open = openIncidentFor(chatId);
+
+    // ── The caller says they are done ─────────────────────────────────────
+    // Checked before anything is written, because otherwise "done" lands on
+    // the case as another turn and gets answered with "Added to TG-…" — which
+    // is what a caller trying to end the conversation actually experienced.
+    //
+    // Matched on natural words, not a slash command: somebody in a crisis, in
+    // their second language, does not type /close. Only exact-ish phrases, so
+    // "the fire is done spreading" cannot close a live incident.
+    if (open && kind === "TEXT" && isClosePhrase(message.text || "")) {
+      callerCloseThread(open.id);
+      await sendTelegram(chatId,
+        `✅ Thanks — *${open.id}* stays with an operator until they confirm it.\n\n` +
+        "If anything changes, or you need help again, just message me.\n\n" +
+        "📞 For immediate help, call *112*"
+      );
+      return;
+    }
 
     // ── Location pins attach to the open incident, never open a new case ──
     if (kind === "LOCATION" && message.location) {
@@ -331,17 +388,6 @@ async function processMessage(message: TelegramMessage) {
       return;
     }
 
-    // The caller saying they are fine is advisory. The case stays OPEN and
-    // visible; only an operator resolves it.
-    if (/^\/(close|done)$/i.test(message.text || "")) {
-      reviseCase(caseId, { callerSaysResolved: true });
-      appendTurn(caseId, { kind: "SYSTEM", text: "Caller indicated the situation is resolved" });
-      await sendTelegram(chatId,
-        `Noted. *${caseId}* stays with an operator until they confirm it.\n\n` +
-        "If anything changes, just message again."
-      );
-      return;
-    }
 
     const c = listCases().find((x) => x.id === caseId);
     const sevEmoji =
