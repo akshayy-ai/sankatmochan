@@ -18,7 +18,7 @@ import {
 
 /**
  * Telegram Bot Webhook — receives text, voice, AND image emergency messages
- * in any Indian language.
+ * in any language.
  *
  * Channels:
  * - Text → GPT-4o-mini classifies
@@ -361,6 +361,8 @@ const START_TEXT =
   "आपातकालीन संदेश हिंदी में भेजें\n" +
   "మీ అత్యవసర సందేశాన్ని తెలుగులో పంపండి\n" +
   "तुमचा आणीबाणीचा संदेश मराठीत पाठवा\n\n" +
+  "🌍 Visiting India? Write in your own language — Español, Français, " +
+  "日本語, Deutsch, العربية all work. Nothing to select.\n\n" +
   "📞 For immediate help, call 112.";
 
 const HELP_TEXT =

@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SANKATMOCHAN — 112 Multilingual Response Grid",
   description:
-    "Multilingual emergency response platform. 22+ Indian languages via voice, WhatsApp, and SMS.",
+    "Multilingual emergency response platform. Any language, over SMS, Telegram, photo and phone call — built for India's 22 official languages and the visitors who speak none of them.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
  * Body: FormData with "audio" file field
  *
  * Uses OpenAI Whisper for transcription, then GPT-4o-mini for translation + classification.
- * Supports all Indian languages that Whisper recognizes.
+ * No language is pinned — the caller's is detected.
  */
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";

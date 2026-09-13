@@ -205,7 +205,7 @@ export async function startRealtimeSession(
     callbacks.onStateChange("active");
     callbacks.onTranscript({
       role: "system",
-      text: "📞 Call connected — speak in any Indian language",
+      text: "📞 Call connected — speak in any language",
       timestamp: Date.now(),
     });
   };

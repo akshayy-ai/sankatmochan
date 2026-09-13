@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       "1. Webhook registered! The bot is now live.",
       "2. Open Telegram and search for your bot",
       "3. Send /start to begin",
-      "4. Send an emergency message in any Indian language",
+      "4. Send an emergency message in any language",
       "5. The bot will classify, translate, and create a case",
     ],
   });
