@@ -67,11 +67,54 @@ export default function Home() {
             <CopilotPanel caseId={selectedCase} />
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center font-mono text-text-dim text-[13px]">
-            <div className="text-center">
-              <div className="text-teal text-[24px] mb-2">🔗</div>
-              <div className="text-text-primary font-bold mb-1">Live Translation Bridge</div>
-              <div>Select a case with an active bridge to view live translation stream</div>
+          /* Not implemented. The old empty state read like a working feature
+             waiting on a selection, which is worse than saying so plainly. */
+          <div className="flex-1 flex items-center justify-center font-mono px-6">
+            <div className="text-center max-w-[520px]">
+              <div className="text-[26px] mb-3" style={{ color: "#3B4553" }}>🔗</div>
+
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <span className="text-[15px] font-bold text-text-primary">
+                  Live Translation Bridge
+                </span>
+                <span
+                  className="text-[8.5px] font-semibold px-[6px] py-[2px] rounded tracking-wide"
+                  style={{ border: "1px solid #2A3644", color: "#8A95A6" }}
+                >
+                  PLANNED
+                </span>
+              </div>
+
+              <p className="text-[12px] leading-relaxed mb-4" style={{ color: "#8A95A6" }}>
+                A caller speaking Telugu and an SDRF responder speaking Marathi,
+                held on one line with the agent interpreting both directions in
+                real time — so neither has to wait for a human interpreter.
+              </p>
+
+              <div
+                className="rounded-[5px] px-4 py-3 text-left"
+                style={{ border: "1px solid #232C38", background: "#0D1117" }}
+              >
+                <div
+                  className="text-[9px] font-semibold tracking-[.12em] mb-2"
+                  style={{ color: "#6E7A8C" }}
+                >
+                  NOT BUILT YET — WHAT WORKS TODAY
+                </div>
+                <div className="text-[11.5px] leading-relaxed" style={{ color: "#C3CCD8" }}>
+                  Translation runs on every case in the{" "}
+                  <span className="text-teal">Console</span>, and the{" "}
+                  <span className="text-teal">📞 Voice</span> agent already holds
+                  a two-way conversation in the caller&apos;s own language.
+                  Bridging a second live participant onto that call is the piece
+                  that does not exist.
+                </div>
+              </div>
+
+              <p className="text-[10px] mt-3" style={{ color: "#4E5A6B" }}>
+                Listed here rather than hidden, because a demo should show its
+                edges.
+              </p>
             </div>
           </div>
         )}

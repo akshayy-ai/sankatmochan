@@ -11,10 +11,11 @@ type Props = {
   onViewChange: (v: ViewKey) => void;
 };
 
-const TABS: { key: ViewKey; label: string; shortcut: string }[] = [
+const TABS: { key: ViewKey; label: string; shortcut: string; planned?: boolean }[] = [
   { key: "console", label: "Console", shortcut: "1" },
   { key: "pipeline", label: "Pipeline", shortcut: "2" },
-  { key: "bridge", label: "Bridge", shortcut: "3" },
+  // Not built. Marked so nobody opens it expecting a working feature.
+  { key: "bridge", label: "Bridge", shortcut: "3", planned: true },
   { key: "voice", label: "📞 Voice", shortcut: "4" },
 ];
 
@@ -81,7 +82,16 @@ export default function Header({ view, onViewChange }: Props) {
             }`}
           >
             {tab.label}
-            <span className="text-[9px] text-text-dim">{tab.shortcut}</span>
+            {tab.planned ? (
+              <span
+                className="text-[8px] font-semibold px-[4px] py-[1px] rounded tracking-wide"
+                style={{ border: "1px solid #2A3644", color: "#5A6575" }}
+              >
+                PLANNED
+              </span>
+            ) : (
+              <span className="text-[9px] text-text-dim">{tab.shortcut}</span>
+            )}
           </button>
         ))}
       </nav>
