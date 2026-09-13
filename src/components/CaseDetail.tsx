@@ -61,7 +61,7 @@ export default function CaseDetail({ caseId }: Props) {
   const [sent, setSent] = useState<Record<string, "sending" | "sent" | "failed">>({});
 
   // Nearest real stations from OpenStreetMap, so a dispatch names WHICH one.
-  type Facility = { type: string; name: string; km: number; phone?: string };
+  type Facility = { type: string; name: string; km: number; phone?: string; roadKm?: number; etaMin?: number };
   const [facilities, setFacilities] = useState<Facility[]>([]);
   useEffect(() => {
     const [lat, lng] = c.coords.split(",").map((v) => parseFloat(v.trim()));
@@ -101,7 +101,13 @@ export default function CaseDetail({ caseId }: Props) {
           language: c.lang,
           caseDetails: c.englishText,
           nearestFacility: nearestFor(agency)
-            ? `${nearestFor(agency)!.name} (${nearestFor(agency)!.km} km)`
+            ? `${nearestFor(agency)!.name} — ${
+                nearestFor(agency)!.roadKm ?? nearestFor(agency)!.km
+              } km${
+                nearestFor(agency)!.etaMin
+                  ? `, ~${nearestFor(agency)!.etaMin} min drive (free-flow, no traffic)`
+                  : ""
+              }`
             : undefined,
         }),
       });
@@ -370,6 +376,39 @@ export default function CaseDetail({ caseId }: Props) {
         </div>
       </div>
 
+      {/* ── Nearest responding units ── */}
+      {facilities.some((f) => f.etaMin) && (
+        <div
+          className="flex-none flex items-center gap-3 px-5 py-[7px] border-t border-border flex-wrap"
+          style={{ background: "#0B0E13" }}
+        >
+          <span className="text-[8.5px] tracking-[.12em]" style={{ color: "#6E7A8C" }}>
+            NEAREST UNITS
+          </span>
+          {recommended.map((r) => {
+            const f = nearestFor(r.agency);
+            if (!f?.etaMin) return null;
+            return (
+              <span
+                key={r.agency}
+                className="text-[9.5px] px-[8px] py-[3px] rounded flex items-center gap-[6px]"
+                style={{ background: "#0F1923", border: "1px solid #1A2D3D", color: "#8DC6E8" }}
+              >
+                <span style={{ color: "#C3CCD8" }}>{f.name.slice(0, 30)}</span>
+                <span style={{ color: "#6E7A8C" }}>
+                  {f.roadKm ?? f.km} km · ~{f.etaMin} min
+                </span>
+              </span>
+            );
+          })}
+          {/* Free-flow routing, no live traffic. Said plainly so nobody reads
+              it as a guarantee — and it is never spoken to the caller. */}
+          <span className="text-[8.5px]" style={{ color: "#4E5A6B" }}>
+            drive time excludes traffic · operator view only
+          </span>
+        </div>
+      )}
+
       {/* ── Bottom action bar ── */}
       <div className="flex-none flex items-center gap-2 px-5 py-[10px] border-t border-border" style={{ background: "#0B0E13" }}>
         {recommended.map((r) => {
@@ -402,7 +441,9 @@ export default function CaseDetail({ caseId }: Props) {
               </span>
               {nearestFor(r.agency) && (
                 <span className="text-[8.5px]" style={{ color: "#6E7A8C" }}>
-                  · {nearestFor(r.agency)!.km}km
+                  {nearestFor(r.agency)!.etaMin
+                    ? `· ~${nearestFor(r.agency)!.etaMin}min`
+                    : `· ${nearestFor(r.agency)!.km}km`}
                 </span>
               )}
             </button>

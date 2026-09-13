@@ -25,7 +25,47 @@ type Facility = {
   lon: number;
   km: number;
   phone?: string;
+  /** Road distance in km, when routing succeeded. */
+  roadKm?: number;
+  /** Free-flow drive time in minutes. NOT traffic-aware — see routeEta(). */
+  etaMin?: number;
 };
+
+const OSRM = process.env.OSRM_URL || "https://router.project-osrm.org";
+
+/**
+ * Road drive time from the incident to a facility.
+ *
+ * This is FREE-FLOW time: OSRM's public server has no live traffic, so in
+ * Pune at 6pm the real figure is worse. It is shown to an operator, who can
+ * weigh it, and deliberately never spoken to a caller — an ETA given to
+ * someone in a burning building can stop them self-rescuing, and this system
+ * dispatches no vehicle to make it true.
+ */
+async function routeEta(
+  fromLat: number, fromLon: number, toLat: number, toLon: number
+): Promise<{ roadKm: number; etaMin: number } | null> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    const url = `${OSRM}/route/v1/driving/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Sankatmochan-112-ERC/1.0" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    const d = await res.json();
+    const r = d?.routes?.[0];
+    if (!r) return null;
+    return {
+      roadKm: Math.round((r.distance / 1000) * 100) / 100,
+      etaMin: Math.max(1, Math.round(r.duration / 60)),
+    };
+  } catch {
+    return null;
+  }
+}
 
 /** Straight-line distance. Road distance would be better; this is honest about being neither. */
 function haversineKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
@@ -112,8 +152,28 @@ out center 40;`;
     const named = facilities.filter((f) => f.name !== "(unnamed)");
     const out = (named.length ? named : facilities).slice(0, 24);
 
+    // Route only the nearest of each type. Routing all 24 would triple the
+    // latency of a screen an operator is waiting on, for facilities they will
+    // never dispatch.
+    const firstOfType = new Map<string, Facility>();
+    for (const f of out) if (!firstOfType.has(f.type)) firstOfType.set(f.type, f);
+
+    await Promise.all(
+      [...firstOfType.values()].map(async (f) => {
+        const r = await routeEta(lat, lng, f.lat, f.lon);
+        if (r) {
+          f.roadKm = r.roadKm;
+          f.etaMin = r.etaMin;
+        }
+      })
+    );
+
     cache.set(key, { at: Date.now(), data: out });
-    return NextResponse.json({ facilities: out, cached: false });
+    return NextResponse.json({
+      facilities: out,
+      cached: false,
+      etaNote: "free-flow drive time, not traffic-aware",
+    });
   } catch (err) {
     console.error("[facilities] lookup failed:", err);
     // Degrade quietly: dispatch proceeds to the agency without a named station.
