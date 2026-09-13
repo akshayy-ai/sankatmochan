@@ -33,6 +33,10 @@ export type CrisisCase = {
   /** Set by the server-side SLA monitor when a case runs past its deadline. */
   slaEscalated?: boolean;
   slaWarned?: boolean;
+  /** Operator holding this case. Advisory — never blocks another operator. */
+  claimedBy?: string;
+  /** Handoff notes, so a shift change does not lose what was learned. */
+  notes?: { by: string; at: string; text: string }[];
   timestamp: string;
   time: string;
   status: string; // "BRIDGE OPEN", "AMB EN ROUTE", "FIRE DISPATCHED", "TRIAGE", "MONITORING"

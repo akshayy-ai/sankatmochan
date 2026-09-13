@@ -54,6 +54,11 @@ export type LiveCase = {
    * see what has already gone out. Otherwise the same unit is dispatched
    * twice while another scene waits.
    */
+  /** Operator who has taken this case. Advisory, not a lock — see claimCase. */
+  claimedBy?: string;
+  claimedAt?: string;
+  /** Handoff notes, so a shift change does not lose what was learned. */
+  notes?: { by: string; at: string; text: string }[];
   /** Warned that the SLA is close with nothing dispatched. */
   slaWarned?: boolean;
   /** Escalated after the SLA passed. Set once, so it does not repeat. */
@@ -275,6 +280,65 @@ export function recordDispatch(caseId: string, agency: string, taskId?: string):
     kind: "SYSTEM",
     text: `${agency} notified${taskId ? ` — workspace task ${taskId.slice(0, 8)}` : ""}`,
   });
+  saveCase(c);
+  return true;
+}
+
+/**
+ * An operator takes a case.
+ *
+ * Advisory ownership, deliberately NOT a lock. If the operator who claimed it
+ * steps away, is on a call, or has gone off shift, anyone else must still be
+ * able to act — an emergency cannot wait on a mutex. What this buys is that
+ * two people no longer unknowingly work the same incident while another goes
+ * untouched, and a takeover is recorded rather than silent.
+ */
+export function claimCase(caseId: string, operator: string): { ok: boolean; previous?: string } {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return { ok: false };
+
+  const previous = c.claimedBy;
+  if (previous === operator) return { ok: true };
+
+  c.claimedBy = operator;
+  c.claimedAt = new Date().toISOString();
+  appendTurn(caseId, {
+    kind: "SYSTEM",
+    text: previous
+      ? `${operator} took over from ${previous}`
+      : `Claimed by ${operator}`,
+  });
+  saveCase(c);
+  return { ok: true, previous };
+}
+
+export function releaseCase(caseId: string, operator: string): boolean {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return false;
+  c.claimedBy = undefined;
+  c.claimedAt = undefined;
+  appendTurn(caseId, { kind: "SYSTEM", text: `Released by ${operator}` });
+  saveCase(c);
+  return true;
+}
+
+/**
+ * A handoff note.
+ *
+ * Everything else on a case is machine-written. This is the one place an
+ * operator records what they worked out and could not derive — a callback
+ * number given verbally, a landmark the caller corrected, that the line keeps
+ * dropping. At a shift change that context otherwise leaves with them.
+ */
+export function addNote(caseId: string, operator: string, text: string): boolean {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return false;
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+
+  c.notes = c.notes || [];
+  c.notes.push({ by: operator, at: new Date().toISOString(), text: trimmed.slice(0, 1000) });
+  appendTurn(caseId, { kind: "SYSTEM", text: `Note by ${operator}: ${trimmed.slice(0, 120)}` });
   saveCase(c);
   return true;
 }

@@ -35,6 +35,8 @@ type TelegramCase = {
   credibility?: { level: string; note?: string; priorDismissals?: number };
   slaEscalated?: boolean;
   slaWarned?: boolean;
+  claimedBy?: string;
+  notes?: { by: string; at: string; text: string }[];
 };
 
 const LANG_CODE: Record<string, string> = {
@@ -201,7 +203,7 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
     timestamp: t.timestamp,
     time: hhmm,
     status: "TRIAGE",
-    owner: null,
+    owner: t.claimedBy ?? null,
     fixNote: "",
     timeline: buildTimeline(t, hhmm),
     tags: [
@@ -221,6 +223,8 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
     credibility: t.credibility,
     slaEscalated: t.slaEscalated,
     slaWarned: t.slaWarned,
+    claimedBy: t.claimedBy,
+    notes: t.notes,
   };
 }
 

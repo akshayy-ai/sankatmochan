@@ -60,6 +60,46 @@ export default function CaseDetail({ caseId }: Props) {
   const recommended = recommendAgencies(c.category, c.severity);
   const [sent, setSent] = useState<Record<string, "sending" | "sent" | "failed">>({});
   const [dismissed, setDismissed] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [operator, setOperator] = useState("Operator");
+
+  // Whoever is signed in; Auth0 runs in pass-through so there is a fallback.
+  useEffect(() => {
+    fetch("/auth/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const n = d?.user?.name || d?.user?.email?.split("@")[0];
+        if (n) setOperator(n);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function claim(release = false) {
+    await fetch("/api/cases/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caseId: c.id, operator, release }),
+    }).catch(() => {});
+  }
+
+  async function saveNote() {
+    const text = noteText.trim();
+    if (!text) return;
+    setSavingNote(true);
+    try {
+      await fetch("/api/cases/note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseId: c.id, operator, text }),
+      });
+      setNoteText("");
+    } catch {
+      // Keep the text in the box so nothing typed is lost.
+    } finally {
+      setSavingNote(false);
+    }
+  }
 
   /**
    * Clearing a flag is a human judgement, recorded on the case.
@@ -179,10 +219,40 @@ export default function CaseDetail({ caseId }: Props) {
             >
               {c.category}
             </span>
-            {c.owner && (
-              <span className="text-[9px] tracking-[.1em]" style={{ color: "#5A6575" }}>
-                CLAIMED BY <span style={{ color: "#C3CCD8" }}>{c.owner}</span>
+            {c.claimedBy || c.owner ? (
+              <span className="flex items-center gap-[6px]">
+                <span className="text-[9px] tracking-[.1em]" style={{ color: "#5A6575" }}>
+                  CLAIMED BY <span style={{ color: "#C3CCD8" }}>{c.claimedBy || c.owner}</span>
+                </span>
+                {/* A takeover is never refused — an emergency cannot wait on a
+                    lock — but it is recorded on the case. */}
+                {(c.claimedBy || c.owner) !== operator && (
+                  <button
+                    onClick={() => claim()}
+                    className="text-[8.5px] px-[6px] py-[2px] rounded cursor-pointer hover:bg-[#1B2430]"
+                    style={{ border: "1px solid #2A3644", color: "#8A95A6" }}
+                  >
+                    Take over
+                  </button>
+                )}
+                {(c.claimedBy || c.owner) === operator && (
+                  <button
+                    onClick={() => claim(true)}
+                    className="text-[8.5px] px-[6px] py-[2px] rounded cursor-pointer hover:bg-[#1B2430]"
+                    style={{ border: "1px solid #2A3644", color: "#8A95A6" }}
+                  >
+                    Release
+                  </button>
+                )}
               </span>
+            ) : (
+              <button
+                onClick={() => claim()}
+                className="text-[9px] font-medium px-[8px] py-[3px] rounded cursor-pointer hover:bg-[#1B2430]"
+                style={{ border: "1px solid #3FD9C8", background: "#0F2C29", color: "#3FD9C8" }}
+              >
+                Claim
+              </button>
             )}
           </div>
           <div className="text-right flex-none">
@@ -475,6 +545,65 @@ export default function CaseDetail({ caseId }: Props) {
                 </span>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* ── Handoff notes ── */}
+        <div className="flex items-center gap-[10px] mb-3">
+          <span className="text-[9.5px] font-semibold tracking-[.14em]" style={{ color: "#8A95A6" }}>
+            HANDOFF NOTES
+          </span>
+          <span className="flex-1 h-px" style={{ background: "#1A2029" }} />
+          <span className="text-[8.5px]" style={{ color: "#4E5A6B" }}>
+            {c.notes?.length ?? 0} NOTE{(c.notes?.length ?? 0) === 1 ? "" : "S"}
+          </span>
+        </div>
+
+        <div className="mb-[18px]">
+          {(c.notes?.length ?? 0) > 0 && (
+            <div className="flex flex-col gap-[6px] mb-[9px]">
+              {c.notes!.map((n, i) => (
+                <div
+                  key={i}
+                  className="rounded-[4px] px-[11px] py-[8px]"
+                  style={{ background: "#0D1117", border: "1px solid #1A2029" }}
+                >
+                  <div className="flex items-center gap-[7px] mb-[3px]">
+                    <span className="text-[9px] font-medium" style={{ color: "#3FD9C8" }}>{n.by}</span>
+                    <span className="text-[8.5px]" style={{ color: "#5A6575" }}>
+                      {new Date(n.at).toLocaleTimeString("en-IN", {
+                        hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata",
+                      })}
+                    </span>
+                  </div>
+                  <div className="text-[11.5px] font-sans leading-relaxed" style={{ color: "#C3CCD8" }}>
+                    {n.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* The one place a person records what the system could not derive:
+              a number given verbally, a landmark the caller corrected, a line
+              that keeps dropping. At a shift change that leaves with them. */}
+          <div className="flex gap-2">
+            <input
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void saveNote(); } }}
+              placeholder="What should the next operator know?"
+              className="flex-1 text-[11px] font-sans px-[10px] py-[7px] rounded outline-none"
+              style={{ background: "#0D1117", border: "1px solid #232C38", color: "#E6EAF0" }}
+            />
+            <button
+              onClick={() => void saveNote()}
+              disabled={savingNote || !noteText.trim()}
+              className="text-[10.5px] font-medium px-[13px] py-[7px] rounded cursor-pointer hover:bg-[#1B2430] disabled:opacity-40 disabled:cursor-default"
+              style={{ border: "1px solid #2A3644", background: "#141B25", color: "#C3CCD8" }}
+            >
+              {savingNote ? "…" : "Add note"}
+            </button>
           </div>
         </div>
 
