@@ -95,9 +95,14 @@ export async function POST(req: NextRequest) {
         `Priority: ${priority}`,
         `Created: ${new Date().toISOString()}`,
       ].join("\n"),
-      priority: priority === "IMMEDIATE" ? "urgent" : priority === "URGENT" ? "high" : "medium",
+      // Severity arrives as P1-P4 from dispatchRouting.priorityFor().
+      priority:
+        priority === "P1" ? "urgent" :
+        priority === "P2" ? "high" :
+        priority === "P4" ? "low" : "medium",
       status: "todo",
-      labels: ["dispatch", agency.toLowerCase(), severity?.toLowerCase()].filter(Boolean),
+      // The API rejects unrecognised keys outright ("Unrecognized key: labels"),
+      // so tags live in the description rather than a field it does not accept.
     });
 
     // 2. Send dispatch notification email via Ambiguous Mail
