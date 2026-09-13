@@ -78,9 +78,12 @@ silently break ingest.
 
 HONEST SCOPE
 
-Cases are held in memory and reset when the container restarts — a deliberate
-scope decision for a hackathon, not a claim of production readiness. Persistence
-is the first thing we would add.
+Cases survive a restart — SQLite write-through on a Docker volume, verified by
+restoring 19 cases on the live box. What this is not: it runs as a single
+instance, so there is no failover; outbound SMS needs gateway credentials we
+do not have; Auth0 is wired but runs in pass-through demo mode; and the
+operator-to-caller translation bridge is designed, not built. Nothing here
+dispatches a vehicle — it files a task an agency has to accept.
 ```
 
 ---
