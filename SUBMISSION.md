@@ -123,10 +123,6 @@ Telegram bot: https://t.me/sankatmochan_112_bot
 
 ## Team Contributions
 
-> ⚠️ **VERIFY BEFORE SUBMITTING.** I only have direct evidence for Akshay and
-> Rohit. Correct Nishant's and Rishikesh's entries to what they actually did —
-> do not submit a guess.
-
 **Akshay Shitole (Lead)**
 ```
 Overall architecture and agent design. Built the multi-channel ingest pipeline
@@ -150,14 +146,17 @@ reachable from behind NAT, and supported the Dockerised rollout.
 
 **Nishant Bagul (Member)**
 ```
-[REPLACE — describe what Nishant actually built, naming specific sponsor tools
-or APIs they worked with.]
+Server setup and deployment. Worked on containerising the application and
+bringing up the Docker Compose stack that runs the console, the tunnel and the
+webhook registrar as one unit, so a reboot brings the whole service back without
+manual steps.
 ```
 
 **Rishikesh Ombase (Member)**
 ```
-[REPLACE — describe what Rishikesh actually built, naming specific sponsor tools
-or APIs they worked with.]
+Demo production. Planned and produced the project's demo video — scripting the
+walkthrough of the live multi-channel flow, recording the console and Telegram
+sessions, and cutting the final submission video.
 ```
 
 ---
