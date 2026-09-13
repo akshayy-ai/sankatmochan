@@ -59,6 +59,29 @@ export default function CaseDetail({ caseId }: Props) {
   // severity rather than a fixed row of buttons that ignored the case.
   const recommended = recommendAgencies(c.category, c.severity);
   const [sent, setSent] = useState<Record<string, "sending" | "sent" | "failed">>({});
+  const [dismissed, setDismissed] = useState(false);
+
+  /**
+   * Clearing a flag is a human judgement, recorded on the case.
+   *
+   * The system over-reports on purpose — an unreadable photo, an
+   * unclassifiable message, a caller who went quiet all become cases. That
+   * trade only holds if clearing one is a single click; otherwise the queue
+   * fills with noise, the operator stops reading it, and over-reporting causes
+   * the miss it was meant to prevent.
+   */
+  async function dismissReview() {
+    setDismissed(true);
+    try {
+      await fetch("/api/cases/dismiss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseId: c.id }),
+      });
+    } catch {
+      setDismissed(false);
+    }
+  }
 
   // Nearest real stations from OpenStreetMap, so a dispatch names WHICH one.
   type Facility = { type: string; name: string; km: number; phone?: string; roadKm?: number; etaMin?: number };
@@ -227,6 +250,39 @@ export default function CaseDetail({ caseId }: Props) {
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto min-h-0 px-5 pt-[14px] pb-6">
+        {/* Review flags — why this case wants a human look, and one click to
+            say it does not. */}
+        {!dismissed && (c.attention?.length ?? 0) > 0 && (
+          <div
+            className="mb-4 rounded-[5px] p-[12px] flex items-start gap-3"
+            style={{ border: "1px solid #3D2A0F", background: "#1A1208" }}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-[9px] mb-[5px]">
+                <span className="w-[5px] h-[5px] rounded-full" style={{ background: "#E8A33D" }} />
+                <span className="text-[9px] font-semibold tracking-[.12em]" style={{ color: "#E8A33D" }}>
+                  NEEDS REVIEW
+                </span>
+                <span className="text-[9px]" style={{ color: "#6E7A8C" }}>
+                  {c.attention!.join(" · ")}
+                </span>
+              </div>
+              <div className="text-[11.5px] font-sans leading-relaxed" style={{ color: "#C3CCD8", maxWidth: "80ch" }}>
+                {c.attention!.includes("CANNOT_SPEAK")
+                  ? "The caller indicated they cannot speak. Treat as urgent and do not call back on an open line."
+                  : "Filed because automatic analysis was incomplete or the message did not read as an emergency. It is here so a person decides, not a classifier."}
+              </div>
+            </div>
+            <button
+              onClick={dismissReview}
+              className="flex-none text-[9.5px] font-medium px-[10px] py-[5px] rounded cursor-pointer hover:bg-[#1B2430]"
+              style={{ border: "1px solid #2A3644", background: "#141B25", color: "#C3CCD8" }}
+            >
+              Not an emergency
+            </button>
+          </div>
+        )}
+
         {/* Corroborating reports — only shown when others describe this same
             incident. Framed as evidence, not noise: independent reports of one
             fire are the strongest confirmation an operator can get. */}

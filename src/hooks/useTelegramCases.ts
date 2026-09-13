@@ -30,6 +30,7 @@ type TelegramCase = {
   imageAnalysis?: string;
   callerNumber?: string;
   cluster?: { id: string; size: number; major: boolean };
+  attention?: string[];
 };
 
 const LANG_CODE: Record<string, string> = {
@@ -214,6 +215,7 @@ function toCrisisCase(t: TelegramCase): CrisisCase {
     slaMinutes: SLA_BY_SEVERITY[severity] ?? 30,
     isLive: true,
     cluster: t.cluster,
+    attention: t.attention,
   };
 }
 

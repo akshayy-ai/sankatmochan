@@ -56,6 +56,9 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
   /* Live Telegram cases ride at the top of the queue, ahead of seeded cases */
   const allCases = useAllCases();
   const liveCount = allCases.filter((c) => c.isLive).length;
+  const flaggedCount = allCases.filter(
+    (c) => c.alert || (c.attention?.length ?? 0) > 0
+  ).length;
 
   const filtered =
     filter === "all"
@@ -67,7 +70,7 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
       : filter === "critical"
       ? allCases.filter((c) => c.severity === "CRITICAL")
       : filter === "flagged"
-      ? allCases.filter((c) => c.alert)
+      ? allCases.filter((c) => c.alert || (c.attention?.length ?? 0) > 0)
       : filter === "live"
       ? allCases.filter((c) => c.isLive)
       : allCases;
@@ -118,7 +121,7 @@ export default function CaseSidebar({ selectedCase, onSelectCase }: Props) {
             { key: "mine", label: "Mine" },
             { key: "unclaimed", label: "Unclaimed" },
             { key: "critical", label: "Critical" },
-            { key: "flagged", label: "Needs review" },
+            { key: "flagged", label: `Needs review${flaggedCount ? ` ${flaggedCount}` : ""}` },
           ].map((f) => (
             <button
               key={f.key}

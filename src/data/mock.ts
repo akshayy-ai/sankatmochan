@@ -24,6 +24,8 @@ export type CrisisCase = {
   isLive?: boolean;
   /** Set when other reports describe the same incident. */
   cluster?: { id: string; size: number; major: boolean };
+  /** Operator-visible flags: unread media, failed analysis, silence. */
+  attention?: string[];
   timestamp: string;
   time: string;
   status: string; // "BRIDGE OPEN", "AMB EN ROUTE", "FIRE DISPATCHED", "TRIAGE", "MONITORING"

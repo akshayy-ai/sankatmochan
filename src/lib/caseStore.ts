@@ -44,6 +44,8 @@ export type LiveCase = {
   callerSaysResolved?: boolean;
   /** Closed by an operator. Only an operator may set this. */
   resolvedByOperator?: boolean;
+  /** An operator looked at the flags and judged this not an emergency. */
+  reviewedByOperator?: boolean;
 };
 
 /** One exchange within a case — a caller utterance, an agent line, or a system note. */
@@ -217,6 +219,26 @@ export function resolveCase(caseId: string): boolean {
   c.resolvedByOperator = true;
   // Age it past the continuation window so the next message opens fresh.
   c.lastTurnAt = 0;
+  saveCase(c);
+  return true;
+}
+
+/**
+ * An operator has reviewed the flags and judged this not an emergency.
+ *
+ * The case is NOT deleted and NOT resolved. The system is deliberately tuned
+ * to over-report — a photo it cannot read, a message it cannot classify, a
+ * caller who went quiet all become cases — and the cost of that trade is only
+ * acceptable if clearing one is a single click. Otherwise the queue fills with
+ * noise, the operator stops reading it, and the over-reporting that was meant
+ * to catch the missed emergency causes one instead.
+ */
+export function dismissFlags(caseId: string): boolean {
+  const c = cases.find((x) => x.id === caseId);
+  if (!c) return false;
+  c.reviewedByOperator = true;
+  c.attention = [];
+  appendTurn(caseId, { kind: "SYSTEM", text: "Flags cleared by operator — reviewed, not an emergency" });
   saveCase(c);
   return true;
 }
