@@ -1,19 +1,22 @@
-# Read-Aloud Script — Sankatmochan · 1:55
+# Read-Aloud Script — Sankatmochan · ~1:50
 
 **Bold** = say it. *Italics* = do it. Nothing else needs reading.
 
 Have ready on your phone: the two Japanese messages below, and **one accident
 photo** in your camera roll.
 
+**Pace: one silent pause only** — the first case landing. That gap is the demo.
+Everywhere else, keep talking while the system works; the next line covers the
+processing time. Six silent gaps would be unwatchable.
+
 ---
 
 *Screen: console, full queue. Phone in frame. Record.*
 
-**"India's one-one-two emergency line takes two hundred million calls a year,
-across twenty-two official languages. The operator picking up in Pune speaks
-two of them. When a call comes in Telugu or Bengali, the first ninety seconds
-go to working out what language it even is — before anyone learns someone is
-drowning."**
+**"India's one-one-two line takes two hundred million calls a year, across
+twenty-two official languages. The operator in Pune speaks two of them. When a
+call comes in Telugu, the first ninety seconds go to working out what language
+it even is — before anyone learns someone is drowning."**
 
 ---
 
@@ -50,9 +53,8 @@ fire, it escalates it."**
 
 *Send the accident photo.*
 
-**"A photo works too. Vision reads the scene — the vehicle, how many people,
-what hazards are visible. For a caller who can't describe what they're looking
-at."**
+**"A photo works too — vision reads the scene. The vehicle, the people, the
+hazards. For a caller who can't describe what they're looking at."**
 
 *Send a voice note — speak in any language.*
 
@@ -63,26 +65,25 @@ shout."**
 
 *Click the case. Scroll to the bottom.*
 
-**"Dispatch isn't a generic row of buttons. A fire routes to the fire brigade
-and an ambulance. It creates a real task in the Ambiguous AI workspace — and
-the acknowledgement comes back, so a request nobody opened stops looking like a
-unit already on the road. It names the actual station, with the real driving
-time."**
+**"A fire routes to the fire brigade and an ambulance. It creates a real task
+in the Ambiguous AI workspace — and the acknowledgement comes back, so a
+request nobody opened stops looking like a unit on the road. It names the
+actual station, with the real driving time."**
 
 ---
 
 *Point at the strip under the header.*
 
-**"That's Exa, watching live Indian disaster news — so the console knows a flood
-is unfolding before the calls arrive."**
+**"That's Exa — live Indian disaster news, so the console knows before the
+calls arrive."**
 
 ---
 
 *Show the queue.*
 
-**"And nobody clicked anything for this part. The SLA monitor runs on the
-server. When a case passes its deadline it escalates on its own — whether or
-not anybody has this screen open."**
+**"And nobody clicked anything for this. The SLA monitor runs on the server —
+when a case passes its deadline it escalates on its own, whether or not anyone
+has this screen open."**
 
 **"Five channels in. One queue out. It's live right now — message the bot
 yourself, in your own language."**
